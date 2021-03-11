@@ -10,6 +10,8 @@ from esphome.const import (
     CONF_ID,
     CONF_INTERNAL,
     CONF_NAME,
+    CONF_MAX_BRIGHTNESS,
+    CONF_MIN_BRIGHTNESS,
     CONF_MQTT_ID,
     CONF_POWER_SUPPLY,
     CONF_RESTORE_MODE,
@@ -81,6 +83,8 @@ BRIGHTNESS_ONLY_LIGHT_SCHEMA = LIGHT_SCHEMA.extend(
             CONF_DEFAULT_TRANSITION_LENGTH, default="1s"
         ): cv.positive_time_period_milliseconds,
         cv.Optional(CONF_EFFECTS): validate_effects(MONOCHROMATIC_EFFECTS),
+        cv.Optional(CONF_MIN_BRIGHTNESS, default=0.0): cv.percentage,
+        cv.Optional(CONF_MAX_BRIGHTNESS, default=1.0): cv.percentage,
     }
 )
 

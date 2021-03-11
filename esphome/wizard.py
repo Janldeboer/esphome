@@ -157,7 +157,7 @@ def wizard(path):
             "or chose another configuration file.".format(color("cyan", path))
         )
         return 2
-    safe_print("Hello Jan!")
+    safe_print("Hi there!")
     sleep(1.5)
     safe_print("I'm the wizard of ESPHome :)")
     sleep(1.25)

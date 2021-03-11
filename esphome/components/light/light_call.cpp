@@ -36,7 +36,7 @@ void LightCall::perform() {
 
     if (this->red_.has_value() || this->green_.has_value() || this->blue_.has_value()) {
       ESP_LOGD(TAG, "  Red=%.0f%%, Green=%.0f%%, Blue=%.0f%%", v.get_red() * 100.0f, v.get_green() * 100.0f,
-        v.get_blue() * 100.0f);
+              v.get_blue() * 100.0f);
     }
 
     if (this->white_.has_value()) {
@@ -208,7 +208,7 @@ LightColorValues LightCall::validate_() {
     }
   }
 
-  #define VALIDATE_RANGE_(name_, upper_name) \
+#define VALIDATE_RANGE_(name_, upper_name) \
   if (name_##_.has_value()) { \
     auto val = *name_##_; \
     if (val < 0.0f || val > 1.0f) { \
@@ -216,7 +216,7 @@ LightColorValues LightCall::validate_() {
       name_##_ = clamp(val, 0.0f, 1.0f); \
     } \
   }
-  #define VALIDATE_RANGE(name, upper_name) VALIDATE_RANGE_(name, upper_name)
+#define VALIDATE_RANGE(name, upper_name) VALIDATE_RANGE_(name, upper_name)
 
   // Range checks
   VALIDATE_RANGE(brightness, "Brightness")
@@ -276,7 +276,8 @@ LightColorValues LightCall::validate_() {
     this->transition_length_.reset();
   }
 
-  if (!this->has_transition_() && !this->has_flash_() && (!this->has_effect_() || *this->effect_ == 0) && supports_transition) {
+  if (!this->has_transition_() && !this->has_flash_() && (!this->has_effect_() || *this->effect_ == 0) && 
+      supports_transition) {
     // nothing specified and light supports transitions, set default transition length
     this->transition_length_ = this->parent_->default_transition_length_;
   }

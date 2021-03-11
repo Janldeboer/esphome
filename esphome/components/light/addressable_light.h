@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/defines.h"
 #include "esphome/core/color.h"
+#include "light_call.h"
 #include "light_output.h"
 #include "light_state.h"
 

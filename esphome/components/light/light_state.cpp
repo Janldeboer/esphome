@@ -178,73 +178,9 @@ MQTTJSONLightComponent *LightState::get_mqtt() const { return this->mqtt_; }
 void LightState::set_mqtt(MQTTJSONLightComponent *mqtt) { this->mqtt_ = mqtt; }
 #endif
 
-#ifdef USE_JSON
-LightCall &LightCall::parse_color_json(JsonObject &root) {
-  if (root.containsKey("state")) {
-    auto val = parse_on_off(root["state"]);
-    switch (val) {
-      case PARSE_ON:
-        this->set_state(true);
-        break;
-      case PARSE_OFF:
-        this->set_state(false);
-        break;
-      case PARSE_TOGGLE:
-        this->set_state(!this->parent_->remote_values.is_on());
-        break;
-      case PARSE_NONE:
-        break;
-    }
-  }
 
-  if (root.containsKey("brightness")) {
-    this->set_brightness(float(root["brightness"]) / 255.0f);
-  }
 
-  if (root.containsKey("color")) {
-    JsonObject &color = root["color"];
-    if (color.containsKey("r")) {
-      this->set_red(float(color["r"]) / 255.0f);
-    }
-    if (color.containsKey("g")) {
-      this->set_green(float(color["g"]) / 255.0f);
-    }
-    if (color.containsKey("b")) {
-      this->set_blue(float(color["b"]) / 255.0f);
-    }
-  }
 
-  if (root.containsKey("white_value")) {
-    this->set_white(float(root["white_value"]) / 255.0f);
-  }
-
-  if (root.containsKey("color_temp")) {
-    this->set_color_temperature(float(root["color_temp"]));
-  }
-
-  return *this;
-}
-LightCall &LightCall::parse_json(JsonObject &root) {
-  this->parse_color_json(root);
-
-  if (root.containsKey("flash")) {
-    auto length = uint32_t(float(root["flash"]) * 1000);
-    this->set_flash_length(length);
-  }
-
-  if (root.containsKey("transition")) {
-    auto length = uint32_t(float(root["transition"]) * 1000);
-    this->set_transition_length(length);
-  }
-
-  if (root.containsKey("effect")) {
-    const char *effect = root["effect"];
-    this->set_effect(effect);
-  }
-
-  return *this;
-}
-#endif
 
 float LightState::get_setup_priority() const { return setup_priority::HARDWARE - 1.0f; }
 LightOutput *LightState::get_output() const { return this->output_; }

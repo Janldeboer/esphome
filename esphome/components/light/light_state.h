@@ -24,7 +24,7 @@ enum LightRestoreMode {
   LIGHT_ALWAYS_OFF,
   LIGHT_ALWAYS_ON,
 };
-  
+
 struct LightStateRTCState {
   bool state{false};
   float brightness{1.0f};

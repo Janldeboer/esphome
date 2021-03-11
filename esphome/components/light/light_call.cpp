@@ -36,7 +36,7 @@ void LightCall::perform() {
 
     if (this->red_.has_value() || this->green_.has_value() || this->blue_.has_value()) {
       ESP_LOGD(TAG, "  Red=%.0f%%, Green=%.0f%%, Blue=%.0f%%", v.get_red() * 100.0f, v.get_green() * 100.0f,
-        v.get_blue() * 100.0f);
+               v.get_blue() * 100.0f);
     }
 
     if (this->white_.has_value()) {
@@ -171,11 +171,11 @@ LightColorValues LightCall::validate_() {
   else if (this->red_.has_value() || this->green_.has_value() || this->blue_.has_value()) {
     if (traits.get_supports_color_interlock()) {
       if (*this->red_ == 1.0f && *this->green_ == 1.0f && *this->blue_ == 1.0f &&
-        traits.get_supports_rgb_white_value() && traits.get_supports_color_interlock()) {
-          this->white_ = optional<float>(1.0f);
-        } else if (!this->white_.has_value() || !traits.get_supports_rgb_white_value()) {
-          this->white_ = optional<float>(0.0f);
-        }
+          traits.get_supports_rgb_white_value() && traits.get_supports_color_interlock()) {
+        this->white_ = optional<float>(1.0f);
+      } else if (!this->white_.has_value() || !traits.get_supports_rgb_white_value()) {
+        this->white_ = optional<float>(0.0f);
+      }
     }
   }
   // if changing Kelvin alone, change to white light
@@ -208,7 +208,7 @@ LightColorValues LightCall::validate_() {
     }
   }
 
-  #define VALIDATE_RANGE_(name_, upper_name) \
+#define VALIDATE_RANGE_(name_, upper_name) \
   if (name_##_.has_value()) { \
     auto val = *name_##_; \
     if (val < 0.0f || val > 1.0f) { \
@@ -216,7 +216,7 @@ LightColorValues LightCall::validate_() {
       name_##_ = clamp(val, 0.0f, 1.0f); \
     } \
   }
-  #define VALIDATE_RANGE(name, upper_name) VALIDATE_RANGE_(name, upper_name)
+#define VALIDATE_RANGE(name, upper_name) VALIDATE_RANGE_(name, upper_name)
 
   // Range checks
   VALIDATE_RANGE(brightness, "Brightness")
@@ -277,7 +277,7 @@ LightColorValues LightCall::validate_() {
   }
 
   if (!this->has_transition_() && !this->has_flash_() && (!this->has_effect_() || *this->effect_ == 0) &&
-    supports_transition) {
+      supports_transition) {
     // nothing specified and light supports transitions, set default transition length
     this->transition_length_ = this->parent_->default_transition_length_;
   }
@@ -320,7 +320,7 @@ LightCall &LightCall::set_effect(const std::string &effect) {
   bool found = false;
   for (uint32_t i = 0; i < this->parent_->effects_.size(); i++) {
     LightEffect *e = this->parent_->effects_[i];
-    
+
     if (strcasecmp(effect.c_str(), e->get_name().c_str()) == 0) {
       this->set_effect(i + 1);
       found = true;

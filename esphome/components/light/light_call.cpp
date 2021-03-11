@@ -36,7 +36,7 @@ void LightCall::perform() {
 
     if (this->red_.has_value() || this->green_.has_value() || this->blue_.has_value()) {
       ESP_LOGD(TAG, "  Red=%.0f%%, Green=%.0f%%, Blue=%.0f%%", v.get_red() * 100.0f, v.get_green() * 100.0f,
-              v.get_blue() * 100.0f);
+               v.get_blue() * 100.0f);
     }
 
     if (this->white_.has_value()) {
@@ -276,7 +276,7 @@ LightColorValues LightCall::validate_() {
     this->transition_length_.reset();
   }
 
-  if (!this->has_transition_() && !this->has_flash_() && (!this->has_effect_() || *this->effect_ == 0) && 
+  if (!this->has_transition_() && !this->has_flash_() && (!this->has_effect_() || *this->effect_ == 0) &&
       supports_transition) {
     // nothing specified and light supports transitions, set default transition length
     this->transition_length_ = this->parent_->default_transition_length_;

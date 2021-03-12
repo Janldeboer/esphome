@@ -178,10 +178,6 @@ MQTTJSONLightComponent *LightState::get_mqtt() const { return this->mqtt_; }
 void LightState::set_mqtt(MQTTJSONLightComponent *mqtt) { this->mqtt_ = mqtt; }
 #endif
 
-
-
-
-
 float LightState::get_setup_priority() const { return setup_priority::HARDWARE - 1.0f; }
 LightOutput *LightState::get_output() const { return this->output_; }
 void LightState::set_gamma_correct(float gamma_correct) { this->gamma_correct_ = gamma_correct; }

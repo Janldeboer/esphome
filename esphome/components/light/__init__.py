@@ -133,6 +133,12 @@ def setup_light_core_(light_var, output_var, config):
 
     if CONF_COLOR_CORRECT in config:
         cg.add(output_var.set_correction(*config[CONF_COLOR_CORRECT]))
+        
+    if CONF_MAX_BRIGHTNESS in config:
+        cg.add(output_var.set_max_brightness(config[CONF_MAX_BRIGHTNESS]))
+        
+    if CONF_MIN_BRIGHTNESS in config:
+        cg.add(output_var.set_min_brightness(config[CONF_MIN_BRIGHTNESS]))
 
     if CONF_POWER_SUPPLY in config:
         var_ = yield cg.get_variable(config[CONF_POWER_SUPPLY])
@@ -155,3 +161,4 @@ def register_light(output_var, config):
 def to_code(config):
     cg.add_define("USE_LIGHT")
     cg.add_global(light_ns.using)
+    

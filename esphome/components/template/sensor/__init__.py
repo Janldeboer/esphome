@@ -6,9 +6,6 @@ from esphome.const import (
     CONF_ID,
     CONF_LAMBDA,
     CONF_STATE,
-    DEVICE_CLASS_EMPTY,
-    UNIT_EMPTY,
-    ICON_EMPTY,
 )
 from .. import template_ns
 
@@ -17,10 +14,12 @@ TemplateSensor = template_ns.class_(
 )
 
 CONFIG_SCHEMA = (
-    sensor.sensor_schema(UNIT_EMPTY, ICON_EMPTY, 1, DEVICE_CLASS_EMPTY)
+    sensor.sensor_schema(
+        TemplateSensor,
+        accuracy_decimals=1,
+    )
     .extend(
         {
-            cv.GenerateID(): cv.declare_id(TemplateSensor),
             cv.Optional(CONF_LAMBDA): cv.returning_lambda,
         }
     )
@@ -28,13 +27,12 @@ CONFIG_SCHEMA = (
 )
 
 
-def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID])
-    yield cg.register_component(var, config)
-    yield sensor.register_sensor(var, config)
+async def to_code(config):
+    var = await sensor.new_sensor(config)
+    await cg.register_component(var, config)
 
     if CONF_LAMBDA in config:
-        template_ = yield cg.process_lambda(
+        template_ = await cg.process_lambda(
             config[CONF_LAMBDA], [], return_type=cg.optional.template(float)
         )
         cg.add(var.set_template(template_))
@@ -50,9 +48,9 @@ def to_code(config):
         }
     ),
 )
-def sensor_template_publish_to_code(config, action_id, template_arg, args):
-    paren = yield cg.get_variable(config[CONF_ID])
+async def sensor_template_publish_to_code(config, action_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
     var = cg.new_Pvariable(action_id, template_arg, paren)
-    template_ = yield cg.templatable(config[CONF_STATE], args, float)
+    template_ = await cg.templatable(config[CONF_STATE], args, float)
     cg.add(var.set_state(template_))
-    yield var
+    return var

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/core/entity_base.h"
 #include "esphome/core/helpers.h"
 #include "esphome/components/binary_sensor/filter.h"
 
@@ -9,10 +10,10 @@ namespace esphome {
 namespace binary_sensor {
 
 #define LOG_BINARY_SENSOR(prefix, type, obj) \
-  if (obj != nullptr) { \
-    ESP_LOGCONFIG(TAG, "%s%s '%s'", prefix, type, obj->get_name().c_str()); \
-    if (!obj->get_device_class().empty()) { \
-      ESP_LOGCONFIG(TAG, "%s  Device Class: '%s'", prefix, obj->get_device_class().c_str()); \
+  if ((obj) != nullptr) { \
+    ESP_LOGCONFIG(TAG, "%s%s '%s'", prefix, LOG_STR_LITERAL(type), (obj)->get_name().c_str()); \
+    if (!(obj)->get_device_class().empty()) { \
+      ESP_LOGCONFIG(TAG, "%s  Device Class: '%s'", prefix, (obj)->get_device_class().c_str()); \
     } \
   }
 
@@ -22,14 +23,9 @@ namespace binary_sensor {
  * The sub classes should notify the front-end of new states via the publish_state() method which
  * handles inverted inputs for you.
  */
-class BinarySensor : public Nameable {
+class BinarySensor : public EntityBase {
  public:
   explicit BinarySensor();
-  /** Construct a binary sensor with the specified name
-   *
-   * @param name Name of this binary sensor.
-   */
-  explicit BinarySensor(const std::string &name);
 
   /** Add a callback to be notified of state changes.
    *
@@ -60,7 +56,7 @@ class BinarySensor : public Nameable {
   std::string get_device_class();
 
   void add_filter(Filter *filter);
-  void add_filters(std::vector<Filter *> filters);
+  void add_filters(const std::vector<Filter *> &filters);
 
   // ========== INTERNAL METHODS ==========
   // (In most use cases you won't need these)
@@ -73,12 +69,13 @@ class BinarySensor : public Nameable {
 
   // ========== OVERRIDE METHODS ==========
   // (You'll only need this when creating your own custom binary sensor)
-  /// Get the default device class for this sensor, or empty string for no default.
+  /** Override this to set the default device class.
+   *
+   * @deprecated This method is deprecated, set the property during config validation instead. (2022.1)
+   */
   virtual std::string device_class();
 
  protected:
-  uint32_t hash_base() override;
-
   CallbackManager<void(bool)> state_callback_{};
   optional<std::string> device_class_{};  ///< Stores the override of the device class
   Filter *filter_list_{nullptr};

@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef USE_ARDUINO
+
 #include "esphome/components/web_server_base/web_server_base.h"
 #include "esphome/core/controller.h"
 #include "esphome/core/component.h"
@@ -10,6 +12,13 @@ namespace prometheus {
 class PrometheusHandler : public AsyncWebHandler, public Component {
  public:
   PrometheusHandler(web_server_base::WebServerBase *base) : base_(base) {}
+
+  /** Determine whether internal components should be exported as metrics.
+   * Defaults to false.
+   *
+   * @param include_internal Whether internal components should be exported.
+   */
+  void set_include_internal(bool include_internal) { include_internal_ = include_internal; }
 
   bool canHandle(AsyncWebServerRequest *request) override {
     if (request->method() == HTTP_GET) {
@@ -50,7 +59,7 @@ class PrometheusHandler : public AsyncWebHandler, public Component {
   /// Return the type for prometheus
   void fan_type_(AsyncResponseStream *stream);
   /// Return the sensor state as prometheus data point
-  void fan_row_(AsyncResponseStream *stream, fan::FanState *obj);
+  void fan_row_(AsyncResponseStream *stream, fan::Fan *obj);
 #endif
 
 #ifdef USE_LIGHT
@@ -74,8 +83,18 @@ class PrometheusHandler : public AsyncWebHandler, public Component {
   void switch_row_(AsyncResponseStream *stream, switch_::Switch *obj);
 #endif
 
+#ifdef USE_LOCK
+  /// Return the type for prometheus
+  void lock_type_(AsyncResponseStream *stream);
+  /// Return the lock Values state as prometheus data point
+  void lock_row_(AsyncResponseStream *stream, lock::Lock *obj);
+#endif
+
   web_server_base::WebServerBase *base_;
+  bool include_internal_{false};
 };
 
 }  // namespace prometheus
 }  // namespace esphome
+
+#endif  // USE_ARDUINO

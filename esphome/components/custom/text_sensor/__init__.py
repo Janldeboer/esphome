@@ -11,18 +11,14 @@ CONFIG_SCHEMA = cv.Schema(
         cv.GenerateID(): cv.declare_id(CustomTextSensorConstructor),
         cv.Required(CONF_LAMBDA): cv.returning_lambda,
         cv.Required(CONF_TEXT_SENSORS): cv.ensure_list(
-            text_sensor.TEXT_SENSOR_SCHEMA.extend(
-                {
-                    cv.GenerateID(): cv.declare_id(text_sensor.TextSensor),
-                }
-            )
+            text_sensor.text_sensor_schema()
         ),
     }
 )
 
 
-def to_code(config):
-    template_ = yield cg.process_lambda(
+async def to_code(config):
+    template_ = await cg.process_lambda(
         config[CONF_LAMBDA],
         [],
         return_type=cg.std_vector.template(text_sensor.TextSensorPtr),
@@ -33,4 +29,4 @@ def to_code(config):
 
     for i, conf in enumerate(config[CONF_TEXT_SENSORS]):
         text = cg.Pvariable(conf[CONF_ID], var.get_text_sensor(i))
-        yield text_sensor.register_text_sensor(text, conf)
+        await text_sensor.register_text_sensor(text, conf)

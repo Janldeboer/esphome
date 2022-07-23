@@ -1,11 +1,11 @@
 #pragma once
 
+#include "esphome/core/automation.h"
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
-#include "esphome/core/automation.h"
-#include <stdlib.h>
-#include <time.h>
 #include <bitset>
+#include <cstdlib>
+#include <ctime>
 
 namespace esphome {
 namespace time {
@@ -32,11 +32,8 @@ struct ESPTime {
   uint16_t year;
   /// daylight saving time flag
   bool is_dst;
-  union {
-    ESPDEPRECATED(".time is deprecated, use .timestamp instead") time_t time;
-    /// unix epoch time (seconds since UTC Midnight January 1, 1970)
-    time_t timestamp;
-  };
+  /// unix epoch time (seconds since UTC Midnight January 1, 1970)
+  time_t timestamp;
 
   /** Convert this ESPTime struct to a null-terminated c string buffer as specified by the format argument.
    * Up to buffer_len bytes are written.
@@ -91,8 +88,12 @@ struct ESPTime {
   /// Convert this ESPTime instance back to a tm struct.
   struct tm to_c_tm();
 
+  static int32_t timezone_offset();
+
   /// Increment this clock instance by one second.
   void increment_second();
+  /// Increment this clock instance by one day.
+  void increment_day();
   bool operator<(ESPTime other);
   bool operator<=(ESPTime other);
   bool operator==(ESPTime other);
@@ -136,6 +137,7 @@ class RealTimeClock : public PollingComponent {
   void synchronize_epoch_(uint32_t epoch);
 
   std::string timezone_{};
+  void apply_timezone_();
 
   CallbackManager<void()> time_sync_callback_;
 };

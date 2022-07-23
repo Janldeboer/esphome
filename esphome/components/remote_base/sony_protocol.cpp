@@ -4,7 +4,7 @@
 namespace esphome {
 namespace remote_base {
 
-static const char *TAG = "remote.sony";
+static const char *const TAG = "remote.sony";
 
 static const uint32_t HEADER_HIGH_US = 2400;
 static const uint32_t HEADER_LOW_US = 600;
@@ -19,10 +19,11 @@ void SonyProtocol::encode(RemoteTransmitData *dst, const SonyData &data) {
   dst->item(HEADER_HIGH_US, HEADER_LOW_US);
 
   for (uint32_t mask = 1UL << (data.nbits - 1); mask != 0; mask >>= 1) {
-    if (data.data & mask)
+    if (data.data & mask) {
       dst->item(BIT_ONE_HIGH_US, BIT_LOW_US);
-    else
+    } else {
       dst->item(BIT_ZERO_HIGH_US, BIT_LOW_US);
+    }
   }
 }
 optional<SonyData> SonyProtocol::decode(RemoteReceiveData src) {

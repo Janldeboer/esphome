@@ -1,4 +1,5 @@
 import codecs
+from contextlib import suppress
 
 import logging
 import os
@@ -54,16 +55,16 @@ def cpp_string_escape(string, encoding="utf-8"):
             result += f"\\{character:03o}"
         else:
             result += chr(character)
-    return '"' + result + '"'
+    return f'"{result}"'
 
 
 def run_system_command(*args):
     import subprocess
 
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    rc = p.returncode
-    return rc, stdout, stderr
+    with subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as p:
+        stdout, stderr = p.communicate()
+        rc = p.returncode
+        return rc, stdout, stderr
 
 
 def mkdir_p(path):
@@ -97,17 +98,17 @@ def is_ip_address(host):
 
 def _resolve_with_zeroconf(host):
     from esphome.core import EsphomeError
-    from esphome.zeroconf import Zeroconf
+    from esphome.zeroconf import EsphomeZeroconf
 
     try:
-        zc = Zeroconf()
+        zc = EsphomeZeroconf()
     except Exception as err:
         raise EsphomeError(
             "Cannot start mDNS sockets, is this a docker container without "
             "host network mode?"
         ) from err
     try:
-        info = zc.resolve_host(host + ".")
+        info = zc.resolve_host(f"{host}.")
     except Exception as err:
         raise EsphomeError(f"Error resolving mDNS hostname: {err}") from err
     finally:
@@ -136,17 +137,15 @@ def resolve_ip_address(host):
         return socket.gethostbyname(host)
     except OSError as err:
         errs.append(str(err))
-        raise EsphomeError(
-            "Error resolving IP address: {}" "".format(", ".join(errs))
-        ) from err
+        raise EsphomeError(f"Error resolving IP address: {', '.join(errs)}") from err
 
 
 def get_bool_env(var, default=False):
     return bool(os.getenv(var, default))
 
 
-def is_hassio():
-    return get_bool_env("ESPHOME_IS_HASSIO")
+def is_ha_addon():
+    return get_bool_env("ESPHOME_IS_HA_ADDON")
 
 
 def walk_files(path):
@@ -211,26 +210,44 @@ def write_file(path: Union[Path, str], text: str):
         raise EsphomeError(f"Could not write file at {path}") from err
 
 
-def write_file_if_changed(path: Union[Path, str], text: str):
+def write_file_if_changed(path: Union[Path, str], text: str) -> bool:
+    """Write text to the given path, but not if the contents match already.
+
+    Returns true if the file was changed.
+    """
     if not isinstance(path, Path):
         path = Path(path)
 
     src_content = None
     if path.is_file():
         src_content = read_file(path)
-    if src_content != text:
-        write_file(path, text)
+    if src_content == text:
+        return False
+    write_file(path, text)
+    return True
 
 
-def copy_file_if_changed(src, dst):
+def copy_file_if_changed(src: os.PathLike, dst: os.PathLike) -> None:
     import shutil
 
     if file_compare(src, dst):
         return
     mkdir_p(os.path.dirname(dst))
     try:
-        shutil.copy(src, dst)
+        shutil.copyfile(src, dst)
     except OSError as err:
+        if isinstance(err, PermissionError):
+            # Older esphome versions copied over the src file permissions too.
+            # So when the dst file had 444 permissions, the dst file would have those
+            # too and subsequent writes would fail
+
+            # -> delete file (it would be overwritten anyway), and try again
+            # if that fails, use normal error handler
+            with suppress(OSError):
+                os.unlink(dst)
+                shutil.copyfile(src, dst)
+                return
+
         from esphome.core import EsphomeError
 
         raise EsphomeError(f"Error copying file {src} to {dst}: {err}") from err
@@ -240,7 +257,7 @@ def list_starts_with(list_, sub):
     return len(sub) <= len(list_) and all(list_[i] == x for i, x in enumerate(sub))
 
 
-def file_compare(path1, path2):
+def file_compare(path1: os.PathLike, path2: os.PathLike) -> bool:
     """Return True if the files path1 and path2 have the same contents."""
     import stat
 
@@ -276,11 +293,11 @@ def file_compare(path1, path2):
 # A dict of types that need to be converted to heaptypes before a class can be added
 # to the object
 _TYPE_OVERLOADS = {
-    int: type("EInt", (int,), dict()),
-    float: type("EFloat", (float,), dict()),
-    str: type("EStr", (str,), dict()),
-    dict: type("EDict", (str,), dict()),
-    list: type("EList", (list,), dict()),
+    int: type("EInt", (int,), {}),
+    float: type("EFloat", (float,), {}),
+    str: type("EStr", (str,), {}),
+    dict: type("EDict", (dict,), {}),
+    list: type("EList", (list,), {}),
 }
 
 # cache created classes here

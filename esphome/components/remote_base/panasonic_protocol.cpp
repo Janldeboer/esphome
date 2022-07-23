@@ -4,7 +4,7 @@
 namespace esphome {
 namespace remote_base {
 
-static const char *TAG = "remote.panasonic";
+static const char *const TAG = "remote.panasonic";
 
 static const uint32_t HEADER_HIGH_US = 3502;
 static const uint32_t HEADER_LOW_US = 1750;
@@ -19,17 +19,19 @@ void PanasonicProtocol::encode(RemoteTransmitData *dst, const PanasonicData &dat
 
   uint32_t mask;
   for (mask = 1UL << 15; mask != 0; mask >>= 1) {
-    if (data.address & mask)
+    if (data.address & mask) {
       dst->item(BIT_HIGH_US, BIT_ONE_LOW_US);
-    else
+    } else {
       dst->item(BIT_HIGH_US, BIT_ZERO_LOW_US);
+    }
   }
 
   for (mask = 1UL << 31; mask != 0; mask >>= 1) {
-    if (data.command & mask)
+    if (data.command & mask) {
       dst->item(BIT_HIGH_US, BIT_ONE_LOW_US);
-    else
+    } else {
       dst->item(BIT_HIGH_US, BIT_ZERO_LOW_US);
+    }
   }
   dst->mark(BIT_HIGH_US);
 }

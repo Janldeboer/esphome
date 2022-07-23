@@ -1,6 +1,15 @@
 #pragma once
 
+#include <utility>
+
+#include "esphome/core/defines.h"
 #include "esphome/core/component.h"
+#ifdef USE_BINARY_SENSOR
+#include "esphome/components/binary_sensor/binary_sensor.h"
+#endif
+#ifdef USE_SENSOR
+#include "esphome/components/sensor/sensor.h"
+#endif
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/automation.h"
 
@@ -40,16 +49,32 @@ class Sim800LComponent : public uart::UARTDevice, public PollingComponent {
   void update() override;
   void loop() override;
   void dump_config() override;
+#ifdef USE_BINARY_SENSOR
+  void set_registered_binary_sensor(binary_sensor::BinarySensor *registered_binary_sensor) {
+    registered_binary_sensor_ = registered_binary_sensor;
+  }
+#endif
+#ifdef USE_SENSOR
+  void set_rssi_sensor(sensor::Sensor *rssi_sensor) { rssi_sensor_ = rssi_sensor; }
+#endif
   void add_on_sms_received_callback(std::function<void(std::string, std::string)> callback) {
     this->callback_.add(std::move(callback));
   }
-  void send_sms(std::string recipient, std::string message);
-  void dial(std::string recipient);
+  void send_sms(const std::string &recipient, const std::string &message);
+  void dial(const std::string &recipient);
 
  protected:
-  void send_cmd_(std::string);
-  void parse_cmd_(std::string);
+  void send_cmd_(const std::string &message);
+  void parse_cmd_(std::string message);
+  void set_registered_(bool registered);
 
+#ifdef USE_BINARY_SENSOR
+  binary_sensor::BinarySensor *registered_binary_sensor_{nullptr};
+#endif
+
+#ifdef USE_SENSOR
+  sensor::Sensor *rssi_sensor_{nullptr};
+#endif
   std::string sender_;
   char read_buffer_[SIM800L_READ_BUFFER_LENGTH];
   size_t read_pos_{0};
@@ -58,7 +83,6 @@ class Sim800LComponent : public uart::UARTDevice, public PollingComponent {
   bool expect_ack_{false};
   sim800l::State state_{STATE_IDLE};
   bool registered_{false};
-  int rssi_{0};
 
   std::string recipient_;
   std::string outgoing_message_;
@@ -72,7 +96,7 @@ class Sim800LReceivedMessageTrigger : public Trigger<std::string, std::string> {
  public:
   explicit Sim800LReceivedMessageTrigger(Sim800LComponent *parent) {
     parent->add_on_sms_received_callback(
-        [this](std::string message, std::string sender) { this->trigger(message, sender); });
+        [this](const std::string &message, const std::string &sender) { this->trigger(message, sender); });
   }
 };
 

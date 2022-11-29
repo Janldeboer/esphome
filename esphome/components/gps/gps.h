@@ -1,9 +1,13 @@
 #pragma once
 
+#ifdef USE_ARDUINO
+
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/sensor/sensor.h"
 #include <TinyGPS++.h>
+
+#include <vector>
 
 namespace esphome {
 namespace gps {
@@ -63,3 +67,5 @@ class GPS : public PollingComponent, public uart::UARTDevice {
 
 }  // namespace gps
 }  // namespace esphome
+
+#endif  // USE_ARDUINO

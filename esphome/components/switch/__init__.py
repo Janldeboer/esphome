@@ -4,23 +4,33 @@ from esphome import automation
 from esphome.automation import Condition, maybe_simple_id
 from esphome.components import mqtt
 from esphome.const import (
+    CONF_DEVICE_CLASS,
+    CONF_ENTITY_CATEGORY,
     CONF_ICON,
     CONF_ID,
-    CONF_INTERNAL,
     CONF_INVERTED,
+    CONF_MQTT_ID,
     CONF_ON_TURN_OFF,
     CONF_ON_TURN_ON,
     CONF_TRIGGER_ID,
-    CONF_MQTT_ID,
-    CONF_NAME,
+    DEVICE_CLASS_EMPTY,
+    DEVICE_CLASS_OUTLET,
+    DEVICE_CLASS_SWITCH,
 )
-from esphome.core import CORE, coroutine, coroutine_with_priority
+from esphome.core import CORE, coroutine_with_priority
+from esphome.cpp_generator import MockObjClass
+from esphome.cpp_helpers import setup_entity
 
 CODEOWNERS = ["@esphome/core"]
 IS_PLATFORM_COMPONENT = True
+DEVICE_CLASSES = [
+    DEVICE_CLASS_EMPTY,
+    DEVICE_CLASS_OUTLET,
+    DEVICE_CLASS_SWITCH,
+]
 
 switch_ns = cg.esphome_ns.namespace("switch_")
-Switch = switch_ns.class_("Switch", cg.Nameable)
+Switch = switch_ns.class_("Switch", cg.EntityBase)
 SwitchPtr = Switch.operator("ptr")
 
 ToggleAction = switch_ns.class_("ToggleAction", automation.Action)
@@ -36,12 +46,13 @@ SwitchTurnOffTrigger = switch_ns.class_(
     "SwitchTurnOffTrigger", automation.Trigger.template()
 )
 
-icon = cv.icon
 
-SWITCH_SCHEMA = cv.MQTT_COMMAND_COMPONENT_SCHEMA.extend(
+validate_device_class = cv.one_of(*DEVICE_CLASSES, lower=True)
+
+
+SWITCH_SCHEMA = cv.ENTITY_BASE_SCHEMA.extend(cv.MQTT_COMMAND_COMPONENT_SCHEMA).extend(
     {
         cv.OnlyWith(CONF_MQTT_ID, "mqtt"): cv.declare_id(mqtt.MQTTSwitchComponent),
-        cv.Optional(CONF_ICON): icon,
         cv.Optional(CONF_INVERTED): cv.boolean,
         cv.Optional(CONF_ON_TURN_ON): automation.validate_automation(
             {
@@ -53,37 +64,84 @@ SWITCH_SCHEMA = cv.MQTT_COMMAND_COMPONENT_SCHEMA.extend(
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(SwitchTurnOffTrigger),
             }
         ),
+        cv.Optional(CONF_DEVICE_CLASS): validate_device_class,
     }
 )
 
+_UNDEF = object()
 
-@coroutine
-def setup_switch_core_(var, config):
-    cg.add(var.set_name(config[CONF_NAME]))
-    if CONF_INTERNAL in config:
-        cg.add(var.set_internal(config[CONF_INTERNAL]))
-    if CONF_ICON in config:
-        cg.add(var.set_icon(config[CONF_ICON]))
+
+def switch_schema(
+    class_: MockObjClass = _UNDEF,
+    *,
+    entity_category: str = _UNDEF,
+    device_class: str = _UNDEF,
+    icon: str = _UNDEF,
+    block_inverted: bool = False,
+):
+    schema = SWITCH_SCHEMA
+    if class_ is not _UNDEF:
+        schema = schema.extend({cv.GenerateID(): cv.declare_id(class_)})
+    if entity_category is not _UNDEF:
+        schema = schema.extend(
+            {
+                cv.Optional(
+                    CONF_ENTITY_CATEGORY, default=entity_category
+                ): cv.entity_category
+            }
+        )
+    if device_class is not _UNDEF:
+        schema = schema.extend(
+            {
+                cv.Optional(
+                    CONF_DEVICE_CLASS, default=device_class
+                ): validate_device_class
+            }
+        )
+    if icon is not _UNDEF:
+        schema = schema.extend({cv.Optional(CONF_ICON, default=icon): cv.icon})
+    if block_inverted:
+        schema = schema.extend(
+            {
+                cv.Optional(CONF_INVERTED): cv.invalid(
+                    "Inverted is not supported for this platform!"
+                )
+            }
+        )
+    return schema
+
+
+async def setup_switch_core_(var, config):
+    await setup_entity(var, config)
+
     if CONF_INVERTED in config:
         cg.add(var.set_inverted(config[CONF_INVERTED]))
     for conf in config.get(CONF_ON_TURN_ON, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
-        yield automation.build_automation(trigger, [], conf)
+        await automation.build_automation(trigger, [], conf)
     for conf in config.get(CONF_ON_TURN_OFF, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
-        yield automation.build_automation(trigger, [], conf)
+        await automation.build_automation(trigger, [], conf)
 
     if CONF_MQTT_ID in config:
         mqtt_ = cg.new_Pvariable(config[CONF_MQTT_ID], var)
-        yield mqtt.register_mqtt_component(mqtt_, config)
+        await mqtt.register_mqtt_component(mqtt_, config)
+
+    if CONF_DEVICE_CLASS in config:
+        cg.add(var.set_device_class(config[CONF_DEVICE_CLASS]))
 
 
-@coroutine
-def register_switch(var, config):
+async def register_switch(var, config):
     if not CORE.has_id(config[CONF_ID]):
         var = cg.Pvariable(config[CONF_ID], var)
     cg.add(cg.App.register_switch(var))
-    yield setup_switch_core_(var, config)
+    await setup_switch_core_(var, config)
+
+
+async def new_switch(config, *args):
+    var = cg.new_Pvariable(config[CONF_ID], *args)
+    await register_switch(var, config)
+    return var
 
 
 SWITCH_ACTION_SCHEMA = maybe_simple_id(
@@ -96,24 +154,24 @@ SWITCH_ACTION_SCHEMA = maybe_simple_id(
 @automation.register_action("switch.toggle", ToggleAction, SWITCH_ACTION_SCHEMA)
 @automation.register_action("switch.turn_off", TurnOffAction, SWITCH_ACTION_SCHEMA)
 @automation.register_action("switch.turn_on", TurnOnAction, SWITCH_ACTION_SCHEMA)
-def switch_toggle_to_code(config, action_id, template_arg, args):
-    paren = yield cg.get_variable(config[CONF_ID])
-    yield cg.new_Pvariable(action_id, template_arg, paren)
+async def switch_toggle_to_code(config, action_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(action_id, template_arg, paren)
 
 
 @automation.register_condition("switch.is_on", SwitchCondition, SWITCH_ACTION_SCHEMA)
-def switch_is_on_to_code(config, condition_id, template_arg, args):
-    paren = yield cg.get_variable(config[CONF_ID])
-    yield cg.new_Pvariable(condition_id, template_arg, paren, True)
+async def switch_is_on_to_code(config, condition_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(condition_id, template_arg, paren, True)
 
 
 @automation.register_condition("switch.is_off", SwitchCondition, SWITCH_ACTION_SCHEMA)
-def switch_is_off_to_code(config, condition_id, template_arg, args):
-    paren = yield cg.get_variable(config[CONF_ID])
-    yield cg.new_Pvariable(condition_id, template_arg, paren, False)
+async def switch_is_off_to_code(config, condition_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
+    return cg.new_Pvariable(condition_id, template_arg, paren, False)
 
 
 @coroutine_with_priority(100.0)
-def to_code(config):
+async def to_code(config):
     cg.add_global(switch_ns.using)
     cg.add_define("USE_SWITCH")

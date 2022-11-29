@@ -6,61 +6,85 @@
 namespace esphome {
 namespace api {
 
-static const char *TAG = "api.service";
+static const char *const TAG = "api.service";
 
 bool APIServerConnectionBase::send_hello_response(const HelloResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_hello_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<HelloResponse>(msg, 2);
 }
 bool APIServerConnectionBase::send_connect_response(const ConnectResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_connect_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ConnectResponse>(msg, 4);
 }
 bool APIServerConnectionBase::send_disconnect_request(const DisconnectRequest &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_disconnect_request: %s", msg.dump().c_str());
+#endif
   return this->send_message_<DisconnectRequest>(msg, 5);
 }
 bool APIServerConnectionBase::send_disconnect_response(const DisconnectResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_disconnect_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<DisconnectResponse>(msg, 6);
 }
 bool APIServerConnectionBase::send_ping_request(const PingRequest &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_ping_request: %s", msg.dump().c_str());
+#endif
   return this->send_message_<PingRequest>(msg, 7);
 }
 bool APIServerConnectionBase::send_ping_response(const PingResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_ping_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<PingResponse>(msg, 8);
 }
 bool APIServerConnectionBase::send_device_info_response(const DeviceInfoResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_device_info_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<DeviceInfoResponse>(msg, 10);
 }
 bool APIServerConnectionBase::send_list_entities_done_response(const ListEntitiesDoneResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_done_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesDoneResponse>(msg, 19);
 }
 #ifdef USE_BINARY_SENSOR
 bool APIServerConnectionBase::send_list_entities_binary_sensor_response(const ListEntitiesBinarySensorResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_binary_sensor_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesBinarySensorResponse>(msg, 12);
 }
 #endif
 #ifdef USE_BINARY_SENSOR
 bool APIServerConnectionBase::send_binary_sensor_state_response(const BinarySensorStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_binary_sensor_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<BinarySensorStateResponse>(msg, 21);
 }
 #endif
 #ifdef USE_COVER
 bool APIServerConnectionBase::send_list_entities_cover_response(const ListEntitiesCoverResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_cover_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesCoverResponse>(msg, 13);
 }
 #endif
 #ifdef USE_COVER
 bool APIServerConnectionBase::send_cover_state_response(const CoverStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_cover_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<CoverStateResponse>(msg, 22);
 }
 #endif
@@ -68,13 +92,17 @@ bool APIServerConnectionBase::send_cover_state_response(const CoverStateResponse
 #endif
 #ifdef USE_FAN
 bool APIServerConnectionBase::send_list_entities_fan_response(const ListEntitiesFanResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_fan_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesFanResponse>(msg, 14);
 }
 #endif
 #ifdef USE_FAN
 bool APIServerConnectionBase::send_fan_state_response(const FanStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_fan_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<FanStateResponse>(msg, 23);
 }
 #endif
@@ -82,13 +110,17 @@ bool APIServerConnectionBase::send_fan_state_response(const FanStateResponse &ms
 #endif
 #ifdef USE_LIGHT
 bool APIServerConnectionBase::send_list_entities_light_response(const ListEntitiesLightResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_light_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesLightResponse>(msg, 15);
 }
 #endif
 #ifdef USE_LIGHT
 bool APIServerConnectionBase::send_light_state_response(const LightStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_light_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<LightStateResponse>(msg, 24);
 }
 #endif
@@ -96,25 +128,33 @@ bool APIServerConnectionBase::send_light_state_response(const LightStateResponse
 #endif
 #ifdef USE_SENSOR
 bool APIServerConnectionBase::send_list_entities_sensor_response(const ListEntitiesSensorResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_sensor_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesSensorResponse>(msg, 16);
 }
 #endif
 #ifdef USE_SENSOR
 bool APIServerConnectionBase::send_sensor_state_response(const SensorStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_sensor_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<SensorStateResponse>(msg, 25);
 }
 #endif
 #ifdef USE_SWITCH
 bool APIServerConnectionBase::send_list_entities_switch_response(const ListEntitiesSwitchResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_switch_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesSwitchResponse>(msg, 17);
 }
 #endif
 #ifdef USE_SWITCH
 bool APIServerConnectionBase::send_switch_state_response(const SwitchStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_switch_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<SwitchStateResponse>(msg, 26);
 }
 #endif
@@ -122,13 +162,17 @@ bool APIServerConnectionBase::send_switch_state_response(const SwitchStateRespon
 #endif
 #ifdef USE_TEXT_SENSOR
 bool APIServerConnectionBase::send_list_entities_text_sensor_response(const ListEntitiesTextSensorResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_text_sensor_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesTextSensorResponse>(msg, 18);
 }
 #endif
 #ifdef USE_TEXT_SENSOR
 bool APIServerConnectionBase::send_text_sensor_state_response(const TextSensorStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_text_sensor_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<TextSensorStateResponse>(msg, 27);
 }
 #endif
@@ -136,35 +180,49 @@ bool APIServerConnectionBase::send_subscribe_logs_response(const SubscribeLogsRe
   return this->send_message_<SubscribeLogsResponse>(msg, 29);
 }
 bool APIServerConnectionBase::send_homeassistant_service_response(const HomeassistantServiceResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_homeassistant_service_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<HomeassistantServiceResponse>(msg, 35);
 }
 bool APIServerConnectionBase::send_subscribe_home_assistant_state_response(
     const SubscribeHomeAssistantStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_subscribe_home_assistant_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<SubscribeHomeAssistantStateResponse>(msg, 39);
 }
 bool APIServerConnectionBase::send_get_time_request(const GetTimeRequest &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_get_time_request: %s", msg.dump().c_str());
+#endif
   return this->send_message_<GetTimeRequest>(msg, 36);
 }
 bool APIServerConnectionBase::send_get_time_response(const GetTimeResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_get_time_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<GetTimeResponse>(msg, 37);
 }
 bool APIServerConnectionBase::send_list_entities_services_response(const ListEntitiesServicesResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_services_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesServicesResponse>(msg, 41);
 }
 #ifdef USE_ESP32_CAMERA
 bool APIServerConnectionBase::send_list_entities_camera_response(const ListEntitiesCameraResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_camera_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesCameraResponse>(msg, 43);
 }
 #endif
 #ifdef USE_ESP32_CAMERA
 bool APIServerConnectionBase::send_camera_image_response(const CameraImageResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_camera_image_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<CameraImageResponse>(msg, 44);
 }
 #endif
@@ -172,87 +230,290 @@ bool APIServerConnectionBase::send_camera_image_response(const CameraImageRespon
 #endif
 #ifdef USE_CLIMATE
 bool APIServerConnectionBase::send_list_entities_climate_response(const ListEntitiesClimateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_list_entities_climate_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ListEntitiesClimateResponse>(msg, 46);
 }
 #endif
 #ifdef USE_CLIMATE
 bool APIServerConnectionBase::send_climate_state_response(const ClimateStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
   ESP_LOGVV(TAG, "send_climate_state_response: %s", msg.dump().c_str());
+#endif
   return this->send_message_<ClimateStateResponse>(msg, 47);
 }
 #endif
 #ifdef USE_CLIMATE
+#endif
+#ifdef USE_NUMBER
+bool APIServerConnectionBase::send_list_entities_number_response(const ListEntitiesNumberResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_list_entities_number_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<ListEntitiesNumberResponse>(msg, 49);
+}
+#endif
+#ifdef USE_NUMBER
+bool APIServerConnectionBase::send_number_state_response(const NumberStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_number_state_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<NumberStateResponse>(msg, 50);
+}
+#endif
+#ifdef USE_NUMBER
+#endif
+#ifdef USE_SELECT
+bool APIServerConnectionBase::send_list_entities_select_response(const ListEntitiesSelectResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_list_entities_select_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<ListEntitiesSelectResponse>(msg, 52);
+}
+#endif
+#ifdef USE_SELECT
+bool APIServerConnectionBase::send_select_state_response(const SelectStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_select_state_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<SelectStateResponse>(msg, 53);
+}
+#endif
+#ifdef USE_SELECT
+#endif
+#ifdef USE_LOCK
+bool APIServerConnectionBase::send_list_entities_lock_response(const ListEntitiesLockResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_list_entities_lock_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<ListEntitiesLockResponse>(msg, 58);
+}
+#endif
+#ifdef USE_LOCK
+bool APIServerConnectionBase::send_lock_state_response(const LockStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_lock_state_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<LockStateResponse>(msg, 59);
+}
+#endif
+#ifdef USE_LOCK
+#endif
+#ifdef USE_BUTTON
+bool APIServerConnectionBase::send_list_entities_button_response(const ListEntitiesButtonResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_list_entities_button_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<ListEntitiesButtonResponse>(msg, 61);
+}
+#endif
+#ifdef USE_BUTTON
+#endif
+#ifdef USE_MEDIA_PLAYER
+bool APIServerConnectionBase::send_list_entities_media_player_response(const ListEntitiesMediaPlayerResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_list_entities_media_player_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<ListEntitiesMediaPlayerResponse>(msg, 63);
+}
+#endif
+#ifdef USE_MEDIA_PLAYER
+bool APIServerConnectionBase::send_media_player_state_response(const MediaPlayerStateResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_media_player_state_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<MediaPlayerStateResponse>(msg, 64);
+}
+#endif
+#ifdef USE_MEDIA_PLAYER
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_le_advertisement_response(const BluetoothLEAdvertisementResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_le_advertisement_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothLEAdvertisementResponse>(msg, 67);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_device_connection_response(const BluetoothDeviceConnectionResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_device_connection_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothDeviceConnectionResponse>(msg, 69);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_gatt_get_services_response(const BluetoothGATTGetServicesResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_gatt_get_services_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothGATTGetServicesResponse>(msg, 71);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_gatt_get_services_done_response(
+    const BluetoothGATTGetServicesDoneResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_gatt_get_services_done_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothGATTGetServicesDoneResponse>(msg, 72);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_gatt_read_response(const BluetoothGATTReadResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_gatt_read_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothGATTReadResponse>(msg, 74);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_gatt_notify_data_response(const BluetoothGATTNotifyDataResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_gatt_notify_data_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothGATTNotifyDataResponse>(msg, 79);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_connections_free_response(const BluetoothConnectionsFreeResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_connections_free_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothConnectionsFreeResponse>(msg, 81);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_gatt_error_response(const BluetoothGATTErrorResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_gatt_error_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothGATTErrorResponse>(msg, 82);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_gatt_write_response(const BluetoothGATTWriteResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_gatt_write_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothGATTWriteResponse>(msg, 83);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+bool APIServerConnectionBase::send_bluetooth_gatt_notify_response(const BluetoothGATTNotifyResponse &msg) {
+#ifdef HAS_PROTO_MESSAGE_DUMP
+  ESP_LOGVV(TAG, "send_bluetooth_gatt_notify_response: %s", msg.dump().c_str());
+#endif
+  return this->send_message_<BluetoothGATTNotifyResponse>(msg, 84);
+}
 #endif
 bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type, uint8_t *msg_data) {
   switch (msg_type) {
     case 1: {
       HelloRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_hello_request: %s", msg.dump().c_str());
+#endif
       this->on_hello_request(msg);
       break;
     }
     case 3: {
       ConnectRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_connect_request: %s", msg.dump().c_str());
+#endif
       this->on_connect_request(msg);
       break;
     }
     case 5: {
       DisconnectRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_disconnect_request: %s", msg.dump().c_str());
+#endif
       this->on_disconnect_request(msg);
       break;
     }
     case 6: {
       DisconnectResponse msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_disconnect_response: %s", msg.dump().c_str());
+#endif
       this->on_disconnect_response(msg);
       break;
     }
     case 7: {
       PingRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_ping_request: %s", msg.dump().c_str());
+#endif
       this->on_ping_request(msg);
       break;
     }
     case 8: {
       PingResponse msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_ping_response: %s", msg.dump().c_str());
+#endif
       this->on_ping_response(msg);
       break;
     }
     case 9: {
       DeviceInfoRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_device_info_request: %s", msg.dump().c_str());
+#endif
       this->on_device_info_request(msg);
       break;
     }
     case 11: {
       ListEntitiesRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_list_entities_request: %s", msg.dump().c_str());
+#endif
       this->on_list_entities_request(msg);
       break;
     }
     case 20: {
       SubscribeStatesRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_subscribe_states_request: %s", msg.dump().c_str());
+#endif
       this->on_subscribe_states_request(msg);
       break;
     }
     case 28: {
       SubscribeLogsRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_subscribe_logs_request: %s", msg.dump().c_str());
+#endif
       this->on_subscribe_logs_request(msg);
       break;
     }
@@ -260,7 +521,9 @@ bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type,
 #ifdef USE_COVER
       CoverCommandRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_cover_command_request: %s", msg.dump().c_str());
+#endif
       this->on_cover_command_request(msg);
 #endif
       break;
@@ -269,7 +532,9 @@ bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type,
 #ifdef USE_FAN
       FanCommandRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_fan_command_request: %s", msg.dump().c_str());
+#endif
       this->on_fan_command_request(msg);
 #endif
       break;
@@ -278,7 +543,9 @@ bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type,
 #ifdef USE_LIGHT
       LightCommandRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_light_command_request: %s", msg.dump().c_str());
+#endif
       this->on_light_command_request(msg);
 #endif
       break;
@@ -287,7 +554,9 @@ bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type,
 #ifdef USE_SWITCH
       SwitchCommandRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_switch_command_request: %s", msg.dump().c_str());
+#endif
       this->on_switch_command_request(msg);
 #endif
       break;
@@ -295,42 +564,54 @@ bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type,
     case 34: {
       SubscribeHomeassistantServicesRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_subscribe_homeassistant_services_request: %s", msg.dump().c_str());
+#endif
       this->on_subscribe_homeassistant_services_request(msg);
       break;
     }
     case 36: {
       GetTimeRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_get_time_request: %s", msg.dump().c_str());
+#endif
       this->on_get_time_request(msg);
       break;
     }
     case 37: {
       GetTimeResponse msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_get_time_response: %s", msg.dump().c_str());
+#endif
       this->on_get_time_response(msg);
       break;
     }
     case 38: {
       SubscribeHomeAssistantStatesRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_subscribe_home_assistant_states_request: %s", msg.dump().c_str());
+#endif
       this->on_subscribe_home_assistant_states_request(msg);
       break;
     }
     case 40: {
       HomeAssistantStateResponse msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_home_assistant_state_response: %s", msg.dump().c_str());
+#endif
       this->on_home_assistant_state_response(msg);
       break;
     }
     case 42: {
       ExecuteServiceRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_execute_service_request: %s", msg.dump().c_str());
+#endif
       this->on_execute_service_request(msg);
       break;
     }
@@ -338,7 +619,9 @@ bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type,
 #ifdef USE_ESP32_CAMERA
       CameraImageRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_camera_image_request: %s", msg.dump().c_str());
+#endif
       this->on_camera_image_request(msg);
 #endif
       break;
@@ -347,8 +630,162 @@ bool APIServerConnectionBase::read_message(uint32_t msg_size, uint32_t msg_type,
 #ifdef USE_CLIMATE
       ClimateCommandRequest msg;
       msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
       ESP_LOGVV(TAG, "on_climate_command_request: %s", msg.dump().c_str());
+#endif
       this->on_climate_command_request(msg);
+#endif
+      break;
+    }
+    case 51: {
+#ifdef USE_NUMBER
+      NumberCommandRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_number_command_request: %s", msg.dump().c_str());
+#endif
+      this->on_number_command_request(msg);
+#endif
+      break;
+    }
+    case 54: {
+#ifdef USE_SELECT
+      SelectCommandRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_select_command_request: %s", msg.dump().c_str());
+#endif
+      this->on_select_command_request(msg);
+#endif
+      break;
+    }
+    case 60: {
+#ifdef USE_LOCK
+      LockCommandRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_lock_command_request: %s", msg.dump().c_str());
+#endif
+      this->on_lock_command_request(msg);
+#endif
+      break;
+    }
+    case 62: {
+#ifdef USE_BUTTON
+      ButtonCommandRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_button_command_request: %s", msg.dump().c_str());
+#endif
+      this->on_button_command_request(msg);
+#endif
+      break;
+    }
+    case 65: {
+#ifdef USE_MEDIA_PLAYER
+      MediaPlayerCommandRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_media_player_command_request: %s", msg.dump().c_str());
+#endif
+      this->on_media_player_command_request(msg);
+#endif
+      break;
+    }
+    case 66: {
+      SubscribeBluetoothLEAdvertisementsRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_subscribe_bluetooth_le_advertisements_request: %s", msg.dump().c_str());
+#endif
+      this->on_subscribe_bluetooth_le_advertisements_request(msg);
+      break;
+    }
+    case 68: {
+#ifdef USE_BLUETOOTH_PROXY
+      BluetoothDeviceRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_bluetooth_device_request: %s", msg.dump().c_str());
+#endif
+      this->on_bluetooth_device_request(msg);
+#endif
+      break;
+    }
+    case 70: {
+#ifdef USE_BLUETOOTH_PROXY
+      BluetoothGATTGetServicesRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_bluetooth_gatt_get_services_request: %s", msg.dump().c_str());
+#endif
+      this->on_bluetooth_gatt_get_services_request(msg);
+#endif
+      break;
+    }
+    case 73: {
+#ifdef USE_BLUETOOTH_PROXY
+      BluetoothGATTReadRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_bluetooth_gatt_read_request: %s", msg.dump().c_str());
+#endif
+      this->on_bluetooth_gatt_read_request(msg);
+#endif
+      break;
+    }
+    case 75: {
+#ifdef USE_BLUETOOTH_PROXY
+      BluetoothGATTWriteRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_bluetooth_gatt_write_request: %s", msg.dump().c_str());
+#endif
+      this->on_bluetooth_gatt_write_request(msg);
+#endif
+      break;
+    }
+    case 76: {
+#ifdef USE_BLUETOOTH_PROXY
+      BluetoothGATTReadDescriptorRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_bluetooth_gatt_read_descriptor_request: %s", msg.dump().c_str());
+#endif
+      this->on_bluetooth_gatt_read_descriptor_request(msg);
+#endif
+      break;
+    }
+    case 77: {
+#ifdef USE_BLUETOOTH_PROXY
+      BluetoothGATTWriteDescriptorRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_bluetooth_gatt_write_descriptor_request: %s", msg.dump().c_str());
+#endif
+      this->on_bluetooth_gatt_write_descriptor_request(msg);
+#endif
+      break;
+    }
+    case 78: {
+#ifdef USE_BLUETOOTH_PROXY
+      BluetoothGATTNotifyRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_bluetooth_gatt_notify_request: %s", msg.dump().c_str());
+#endif
+      this->on_bluetooth_gatt_notify_request(msg);
+#endif
+      break;
+    }
+    case 80: {
+#ifdef USE_BLUETOOTH_PROXY
+      SubscribeBluetoothConnectionsFreeRequest msg;
+      msg.decode(msg_data, msg_size);
+#ifdef HAS_PROTO_MESSAGE_DUMP
+      ESP_LOGVV(TAG, "on_subscribe_bluetooth_connections_free_request: %s", msg.dump().c_str());
+#endif
+      this->on_subscribe_bluetooth_connections_free_request(msg);
 #endif
       break;
     }
@@ -545,6 +982,191 @@ void APIServerConnection::on_climate_command_request(const ClimateCommandRequest
     return;
   }
   this->climate_command(msg);
+}
+#endif
+#ifdef USE_NUMBER
+void APIServerConnection::on_number_command_request(const NumberCommandRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->number_command(msg);
+}
+#endif
+#ifdef USE_SELECT
+void APIServerConnection::on_select_command_request(const SelectCommandRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->select_command(msg);
+}
+#endif
+#ifdef USE_BUTTON
+void APIServerConnection::on_button_command_request(const ButtonCommandRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->button_command(msg);
+}
+#endif
+#ifdef USE_LOCK
+void APIServerConnection::on_lock_command_request(const LockCommandRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->lock_command(msg);
+}
+#endif
+#ifdef USE_MEDIA_PLAYER
+void APIServerConnection::on_media_player_command_request(const MediaPlayerCommandRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->media_player_command(msg);
+}
+#endif
+void APIServerConnection::on_subscribe_bluetooth_le_advertisements_request(
+    const SubscribeBluetoothLEAdvertisementsRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->subscribe_bluetooth_le_advertisements(msg);
+}
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_bluetooth_device_request(const BluetoothDeviceRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->bluetooth_device_request(msg);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_bluetooth_gatt_get_services_request(const BluetoothGATTGetServicesRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->bluetooth_gatt_get_services(msg);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_bluetooth_gatt_read_request(const BluetoothGATTReadRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->bluetooth_gatt_read(msg);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_bluetooth_gatt_write_request(const BluetoothGATTWriteRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->bluetooth_gatt_write(msg);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_bluetooth_gatt_read_descriptor_request(const BluetoothGATTReadDescriptorRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->bluetooth_gatt_read_descriptor(msg);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_bluetooth_gatt_write_descriptor_request(const BluetoothGATTWriteDescriptorRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->bluetooth_gatt_write_descriptor(msg);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_bluetooth_gatt_notify_request(const BluetoothGATTNotifyRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  this->bluetooth_gatt_notify(msg);
+}
+#endif
+#ifdef USE_BLUETOOTH_PROXY
+void APIServerConnection::on_subscribe_bluetooth_connections_free_request(
+    const SubscribeBluetoothConnectionsFreeRequest &msg) {
+  if (!this->is_connection_setup()) {
+    this->on_no_setup_connection();
+    return;
+  }
+  if (!this->is_authenticated()) {
+    this->on_unauthenticated_access();
+    return;
+  }
+  BluetoothConnectionsFreeResponse ret = this->subscribe_bluetooth_connections_free(msg);
+  if (!this->send_bluetooth_connections_free_response(ret)) {
+    this->on_fatal_error();
+  }
 }
 #endif
 

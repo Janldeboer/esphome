@@ -4,7 +4,7 @@
 namespace esphome {
 namespace dfplayer {
 
-static const char* TAG = "dfplayer";
+static const char *const TAG = "dfplayer";
 
 void DFPlayer::play_folder(uint16_t folder, uint16_t file) {
   if (folder < 100 && file < 256) {
@@ -77,14 +77,16 @@ void DFPlayer::loop() {
           case 0x3A:
             if (argument == 1) {
               ESP_LOGI(TAG, "USB loaded");
-            } else if (argument == 2)
+            } else if (argument == 2) {
               ESP_LOGI(TAG, "TF Card loaded");
+            }
             break;
           case 0x3B:
             if (argument == 1) {
               ESP_LOGI(TAG, "USB unloaded");
-            } else if (argument == 2)
+            } else if (argument == 2) {
               ESP_LOGI(TAG, "TF Card unloaded");
+            }
             break;
           case 0x3F:
             if (argument == 1) {

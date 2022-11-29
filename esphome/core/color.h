@@ -38,13 +38,27 @@ struct Color {
                                                                                         g(green),
                                                                                         b(blue),
                                                                                         w(white) {}
-  inline Color(uint32_t colorcode) ALWAYS_INLINE : r((colorcode >> 16) & 0xFF),
-                                                   g((colorcode >> 8) & 0xFF),
-                                                   b((colorcode >> 0) & 0xFF),
-                                                   w((colorcode >> 24) & 0xFF) {}
+  inline explicit Color(uint32_t colorcode) ALWAYS_INLINE : r((colorcode >> 16) & 0xFF),
+                                                            g((colorcode >> 8) & 0xFF),
+                                                            b((colorcode >> 0) & 0xFF),
+                                                            w((colorcode >> 24) & 0xFF) {}
 
   inline bool is_on() ALWAYS_INLINE { return this->raw_32 != 0; }
-  inline Color &operator=(const Color &rhs) ALWAYS_INLINE {
+
+  inline bool operator==(const Color &rhs) {  // NOLINT
+    return this->raw_32 == rhs.raw_32;
+  }
+  inline bool operator==(uint32_t colorcode) {  // NOLINT
+    return this->raw_32 == colorcode;
+  }
+  inline bool operator!=(const Color &rhs) {  // NOLINT
+    return this->raw_32 != rhs.raw_32;
+  }
+  inline bool operator!=(uint32_t colorcode) {  // NOLINT
+    return this->raw_32 != colorcode;
+  }
+
+  inline Color &operator=(const Color &rhs) ALWAYS_INLINE {  // NOLINT
     this->r = rhs.r;
     this->g = rhs.g;
     this->b = rhs.b;
@@ -139,12 +153,29 @@ struct Color {
     return Color(uint8_t((uint16_t(r) * 255U / max_rgb)), uint8_t((uint16_t(g) * 255U / max_rgb)),
                  uint8_t((uint16_t(b) * 255U / max_rgb)), w);
   }
-  Color fade_to_white(uint8_t amnt) { return Color(255, 255, 255, 255) - (*this * amnt); }
-  Color fade_to_black(uint8_t amnt) { return *this * amnt; }
+
+  Color gradient(const Color &to_color, uint8_t amnt) {
+    Color new_color;
+    float amnt_f = float(amnt) / 255.0f;
+    new_color.r = amnt_f * (to_color.r - (*this).r) + (*this).r;
+    new_color.g = amnt_f * (to_color.g - (*this).g) + (*this).g;
+    new_color.b = amnt_f * (to_color.b - (*this).b) + (*this).b;
+    new_color.w = amnt_f * (to_color.w - (*this).w) + (*this).w;
+    return new_color;
+  }
+  Color fade_to_white(uint8_t amnt) { return (*this).gradient(Color::WHITE, amnt); }
+  Color fade_to_black(uint8_t amnt) { return (*this).gradient(Color::BLACK, amnt); }
+
   Color lighten(uint8_t delta) { return *this + delta; }
   Color darken(uint8_t delta) { return *this - delta; }
+
+  static const Color BLACK;
+  static const Color WHITE;
 };
 
-static const Color COLOR_BLACK(0, 0, 0);
-static const Color COLOR_WHITE(255, 255, 255, 255);
-};  // namespace esphome
+ESPDEPRECATED("Use Color::BLACK instead of COLOR_BLACK", "v1.21")
+extern const Color COLOR_BLACK;
+ESPDEPRECATED("Use Color::WHITE instead of COLOR_WHITE", "v1.21")
+extern const Color COLOR_WHITE;
+
+}  // namespace esphome

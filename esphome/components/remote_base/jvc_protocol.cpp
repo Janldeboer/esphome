@@ -4,7 +4,7 @@
 namespace esphome {
 namespace remote_base {
 
-static const char *TAG = "remote.jvc";
+static const char *const TAG = "remote.jvc";
 
 static const uint8_t NBITS = 16;
 static const uint32_t HEADER_HIGH_US = 8400;
@@ -20,10 +20,11 @@ void JVCProtocol::encode(RemoteTransmitData *dst, const JVCData &data) {
   dst->item(HEADER_HIGH_US, HEADER_LOW_US);
 
   for (uint32_t mask = 1UL << (NBITS - 1); mask != 0; mask >>= 1) {
-    if (data.data & mask)
+    if (data.data & mask) {
       dst->item(BIT_HIGH_US, BIT_ONE_LOW_US);
-    else
+    } else {
       dst->item(BIT_HIGH_US, BIT_ZERO_LOW_US);
+    }
   }
 
   dst->mark(BIT_HIGH_US);

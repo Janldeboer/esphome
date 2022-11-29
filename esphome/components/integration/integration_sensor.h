@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/preferences.h"
 #include "esphome/core/automation.h"
+#include "esphome/core/hal.h"
 #include "esphome/components/sensor/sensor.h"
 
 namespace esphome {
@@ -54,18 +55,17 @@ class IntegrationSensor : public sensor::Sensor, public Component {
   void publish_and_save_(double result) {
     this->result_ = result;
     this->publish_state(result);
-    float result_f = result;
-    this->rtc_.save(&result_f);
+    if (this->restore_) {
+      float result_f = result;
+      this->pref_.save(&result_f);
+    }
   }
-  std::string unit_of_measurement() override;
-  std::string icon() override { return this->sensor_->get_icon(); }
-  int8_t accuracy_decimals() override { return this->sensor_->get_accuracy_decimals() + 2; }
 
   sensor::Sensor *sensor_;
   IntegrationSensorTime time_;
   IntegrationMethod method_;
   bool restore_;
-  ESPPreferenceObject rtc_;
+  ESPPreferenceObject pref_;
 
   uint32_t last_update_;
   double result_{0.0f};

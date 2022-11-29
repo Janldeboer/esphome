@@ -4,7 +4,7 @@
 namespace esphome {
 namespace whirlpool {
 
-static const char *TAG = "whirlpool.climate";
+static const char *const TAG = "whirlpool.climate";
 
 const uint16_t WHIRLPOOL_HEADER_MARK = 9000;
 const uint16_t WHIRLPOOL_HEADER_SPACE = 4494;
@@ -48,7 +48,7 @@ void WhirlpoolClimate::transmit_state() {
     this->powered_on_assumed = powered_on;
   }
   switch (this->mode) {
-    case climate::CLIMATE_MODE_AUTO:
+    case climate::CLIMATE_MODE_HEAT_COOL:
       // set fan auto
       // set temp auto temp
       // set sleep false
@@ -81,7 +81,7 @@ void WhirlpoolClimate::transmit_state() {
   remote_state[3] |= (uint8_t)(temp - this->temperature_min_()) << 4;
 
   // Fan speed
-  switch (this->fan_mode) {
+  switch (this->fan_mode.value()) {
     case climate::CLIMATE_FAN_HIGH:
       remote_state[2] |= WHIRLPOOL_FAN_HIGH;
       break;
@@ -120,7 +120,7 @@ void WhirlpoolClimate::transmit_state() {
 
   // Send code
   auto transmit = this->transmitter_->transmit();
-  auto data = transmit.get_data();
+  auto *data = transmit.get_data();
 
   data->set_carrier_frequency(38000);
 
@@ -164,10 +164,10 @@ bool WhirlpoolClimate::on_receive(remote_base::RemoteReceiveData data) {
         return false;
     }
     for (int j = 0; j < 8; j++) {
-      if (data.expect_item(WHIRLPOOL_BIT_MARK, WHIRLPOOL_ONE_SPACE))
+      if (data.expect_item(WHIRLPOOL_BIT_MARK, WHIRLPOOL_ONE_SPACE)) {
         remote_state[i] |= 1 << j;
 
-      else if (!data.expect_item(WHIRLPOOL_BIT_MARK, WHIRLPOOL_ZERO_SPACE)) {
+      } else if (!data.expect_item(WHIRLPOOL_BIT_MARK, WHIRLPOOL_ZERO_SPACE)) {
         ESP_LOGV(TAG, "Byte %d bit %d fail", i, j);
         return false;
       }
@@ -239,7 +239,7 @@ bool WhirlpoolClimate::on_receive(remote_base::RemoteReceiveData data) {
         this->mode = climate::CLIMATE_MODE_FAN_ONLY;
         break;
       case WHIRLPOOL_AUTO:
-        this->mode = climate::CLIMATE_MODE_AUTO;
+        this->mode = climate::CLIMATE_MODE_HEAT_COOL;
         break;
     }
   }

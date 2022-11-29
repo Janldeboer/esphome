@@ -1,5 +1,8 @@
 #pragma once
 
+#ifdef USE_ARDUINO
+
+#include <memory>
 #include <DNSServer.h>
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
@@ -9,11 +12,6 @@
 namespace esphome {
 
 namespace captive_portal {
-
-struct CaptivePortalSettings {
-  char ssid[33];
-  char password[65];
-} PACKED;  // NOLINT
 
 class CaptivePortal : public AsyncWebHandler, public Component {
  public:
@@ -31,7 +29,7 @@ class CaptivePortal : public AsyncWebHandler, public Component {
     this->active_ = false;
     this->base_->deinit();
     this->dns_server_->stop();
-    delete this->dns_server_;
+    this->dns_server_ = nullptr;
   }
 
   bool canHandle(AsyncWebServerRequest *request) override {
@@ -41,17 +39,7 @@ class CaptivePortal : public AsyncWebHandler, public Component {
     if (request->method() == HTTP_GET) {
       if (request->url() == "/")
         return true;
-      if (request->url() == "/stylesheet.css")
-        return true;
-      if (request->url() == "/wifi-strength-1.svg")
-        return true;
-      if (request->url() == "/wifi-strength-2.svg")
-        return true;
-      if (request->url() == "/wifi-strength-3.svg")
-        return true;
-      if (request->url() == "/wifi-strength-4.svg")
-        return true;
-      if (request->url() == "/lock.svg")
+      if (request->url() == "/config.json")
         return true;
       if (request->url() == "/wifisave")
         return true;
@@ -60,23 +48,22 @@ class CaptivePortal : public AsyncWebHandler, public Component {
     return false;
   }
 
-  void handle_index(AsyncWebServerRequest *request);
+  void handle_config(AsyncWebServerRequest *request);
 
   void handle_wifisave(AsyncWebServerRequest *request);
 
   void handleRequest(AsyncWebServerRequest *req) override;
 
  protected:
-  void override_sta_(const std::string &ssid, const std::string &password);
-
   web_server_base::WebServerBase *base_;
   bool initialized_{false};
   bool active_{false};
-  ESPPreferenceObject pref_;
-  DNSServer *dns_server_{nullptr};
+  std::unique_ptr<DNSServer> dns_server_{nullptr};
 };
 
-extern CaptivePortal *global_captive_portal;
+extern CaptivePortal *global_captive_portal;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace captive_portal
 }  // namespace esphome
+
+#endif  // USE_ARDUINO

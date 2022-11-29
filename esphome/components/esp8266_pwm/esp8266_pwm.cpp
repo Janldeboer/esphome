@@ -1,17 +1,17 @@
+#ifdef USE_ESP8266
+
 #include "esp8266_pwm.h"
+#include "esphome/core/macros.h"
+#include "esphome/core/defines.h"
 #include "esphome/core/log.h"
 #include "esphome/core/helpers.h"
-
-#ifdef ARDUINO_ESP8266_RELEASE_2_3_0
-#error ESP8266 PWM requires at least arduino_core_version 2.4.0
-#endif
 
 #include <core_esp8266_waveform.h>
 
 namespace esphome {
 namespace esp8266_pwm {
 
-static const char *TAG = "esp8266_pwm";
+static const char *const TAG = "esp8266_pwm";
 
 void ESP8266PWM::setup() {
   ESP_LOGCONFIG(TAG, "Setting up ESP8266 PWM Output...");
@@ -54,3 +54,5 @@ void HOT ESP8266PWM::write_state(float state) {
 
 }  // namespace esp8266_pwm
 }  // namespace esphome
+
+#endif

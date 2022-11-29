@@ -1,17 +1,28 @@
-#include "esp32_ble_tracker.h"
-#include "esphome/core/log.h"
-#include "esphome/core/application.h"
-#include "esphome/core/helpers.h"
+#ifdef USE_ESP32
 
-#ifdef ARDUINO_ARCH_ESP32
+#include "esp32_ble_tracker.h"
+#include "esphome/core/application.h"
+#include "esphome/core/defines.h"
+#include "esphome/core/hal.h"
+#include "esphome/core/helpers.h"
+#include "esphome/core/log.h"
 
 #include <nvs_flash.h>
 #include <freertos/FreeRTOSConfig.h>
 #include <esp_bt_main.h>
 #include <esp_bt.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_gap_ble_api.h>
 #include <esp_bt_defs.h>
+
+#ifdef USE_OTA
+#include "esphome/components/ota/ota_component.h"
+#endif
+
+#ifdef USE_ARDUINO
+#include <esp32-hal-bt.h>
+#endif
 
 // bt_trace.h
 #undef TAG
@@ -19,9 +30,9 @@
 namespace esphome {
 namespace esp32_ble_tracker {
 
-static const char *TAG = "esp32_ble_tracker";
+static const char *const TAG = "esp32_ble_tracker";
 
-ESP32BLETracker *global_esp32_ble_tracker = nullptr;
+ESP32BLETracker *global_esp32_ble_tracker = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 uint64_t ble_addr_to_uint64(const esp_bd_addr_t address) {
   uint64_t u = 0;
@@ -34,61 +45,162 @@ uint64_t ble_addr_to_uint64(const esp_bd_addr_t address) {
   return u;
 }
 
+float ESP32BLETracker::get_setup_priority() const { return setup_priority::BLUETOOTH; }
+
 void ESP32BLETracker::setup() {
   global_esp32_ble_tracker = this;
   this->scan_result_lock_ = xSemaphoreCreateMutex();
   this->scan_end_lock_ = xSemaphoreCreateMutex();
-
+  this->scanner_idle_ = true;
   if (!ESP32BLETracker::ble_setup()) {
     this->mark_failed();
     return;
   }
 
-  global_esp32_ble_tracker->start_scan(true);
+#ifdef USE_OTA
+  ota::global_ota_component->add_on_state_callback([this](ota::OTAState state, float progress, uint8_t error) {
+    if (state == ota::OTA_STARTED) {
+      this->stop_scan();
+    }
+  });
+#endif
+
+  if (this->scan_continuous_) {
+    if (xSemaphoreTake(this->scan_end_lock_, 0L)) {
+      this->start_scan_(true);
+    } else {
+      ESP_LOGW(TAG, "Cannot start scan!");
+    }
+  }
 }
 
 void ESP32BLETracker::loop() {
-  if (xSemaphoreTake(this->scan_end_lock_, 0L)) {
-    xSemaphoreGive(this->scan_end_lock_);
-    global_esp32_ble_tracker->start_scan(false);
+  BLEEvent *ble_event = this->ble_events_.pop();
+  while (ble_event != nullptr) {
+    if (ble_event->type_) {
+      this->real_gattc_event_handler_(ble_event->event_.gattc.gattc_event, ble_event->event_.gattc.gattc_if,
+                                      &ble_event->event_.gattc.gattc_param);
+    } else {
+      this->real_gap_event_handler_(ble_event->event_.gap.gap_event, &ble_event->event_.gap.gap_param);
+    }
+    delete ble_event;  // NOLINT(cppcoreguidelines-owning-memory)
+    ble_event = this->ble_events_.pop();
   }
 
-  if (xSemaphoreTake(this->scan_result_lock_, 5L / portTICK_PERIOD_MS)) {
-    uint32_t index = this->scan_result_index_;
-    xSemaphoreGive(this->scan_result_lock_);
-
-    if (index >= 16) {
-      ESP_LOGW(TAG, "Too many BLE events to process. Some devices may not show up.");
+  int connecting = 0;
+  int discovered = 0;
+  int searching = 0;
+  for (auto *client : this->clients_) {
+    switch (client->state()) {
+      case ClientState::DISCOVERED:
+        discovered++;
+        break;
+      case ClientState::SEARCHING:
+        searching++;
+        break;
+      case ClientState::CONNECTING:
+      case ClientState::READY_TO_CONNECT:
+        connecting++;
+        break;
+      default:
+        break;
     }
-    for (size_t i = 0; i < index; i++) {
-      ESPBTDevice device;
-      device.parse_scan_rst(this->scan_result_buffer_[i]);
+  }
+  bool promote_to_connecting = discovered && !searching && !connecting;
 
-      bool found = false;
-      for (auto *listener : this->listeners_)
-        if (listener->parse_device(device))
-          found = true;
+  if (!this->scanner_idle_) {
+    if (this->scan_result_index_ &&  // if it looks like we have a scan result we will take the lock
+        xSemaphoreTake(this->scan_result_lock_, 5L / portTICK_PERIOD_MS)) {
+      uint32_t index = this->scan_result_index_;
+      if (index) {
+        if (index >= 16) {
+          ESP_LOGW(TAG, "Too many BLE events to process. Some devices may not show up.");
+        }
+        for (size_t i = 0; i < index; i++) {
+          ESPBTDevice device;
+          device.parse_scan_rst(this->scan_result_buffer_[i]);
 
-      if (!found) {
-        this->print_bt_device_info(device);
+          bool found = false;
+          for (auto *listener : this->listeners_) {
+            if (listener->parse_device(device))
+              found = true;
+          }
+
+          for (auto *client : this->clients_) {
+            if (client->parse_device(device)) {
+              found = true;
+              if (!connecting && client->state() == ClientState::DISCOVERED) {
+                promote_to_connecting = true;
+              }
+            }
+          }
+
+          if (!found && !this->scan_continuous_) {
+            this->print_bt_device_info(device);
+          }
+        }
+        this->scan_result_index_ = 0;
+      }
+      xSemaphoreGive(this->scan_result_lock_);
+    }
+
+    if (!connecting && xSemaphoreTake(this->scan_end_lock_, 0L)) {
+      if (this->scan_continuous_) {
+        if (!promote_to_connecting && !this->scan_start_failed_ && !this->scan_set_param_failed_) {
+          this->start_scan_(false);
+        } else {
+          // We didn't start the scan, so we need to release the lock
+          xSemaphoreGive(this->scan_end_lock_);
+        }
+      } else if (!this->scanner_idle_) {
+        this->end_of_scan_();
+        return;
       }
     }
 
-    if (xSemaphoreTake(this->scan_result_lock_, 10L / portTICK_PERIOD_MS)) {
-      this->scan_result_index_ = 0;
-      xSemaphoreGive(this->scan_result_lock_);
+    if (this->scan_start_failed_ || this->scan_set_param_failed_) {
+      esp_ble_gap_stop_scanning();
+      if (this->scan_start_failed_) {
+        ESP_LOGE(TAG, "Scan start failed: %d", this->scan_start_failed_);
+        this->scan_start_failed_ = ESP_BT_STATUS_SUCCESS;
+      }
+      if (this->scan_set_param_failed_) {
+        ESP_LOGE(TAG, "Scan set param failed: %d", this->scan_set_param_failed_);
+        this->scan_set_param_failed_ = ESP_BT_STATUS_SUCCESS;
+      }
     }
   }
 
-  if (this->scan_set_param_failed_) {
-    ESP_LOGE(TAG, "Scan set param failed: %d", this->scan_set_param_failed_);
-    this->scan_set_param_failed_ = ESP_BT_STATUS_SUCCESS;
+  // If there is a discovered client and no connecting
+  // clients and no clients using the scanner to search for
+  // devices, then stop scanning and promote the discovered
+  // client to ready to connect.
+  if (promote_to_connecting) {
+    for (auto *client : this->clients_) {
+      if (client->state() == ClientState::DISCOVERED) {
+        ESP_LOGD(TAG, "Pausing scan to make connection...");
+        esp_ble_gap_stop_scanning();
+        // We only want to promote one client at a time.
+        client->set_state(ClientState::READY_TO_CONNECT);
+        break;
+      }
+    }
   }
+}
 
-  if (this->scan_start_failed_) {
-    ESP_LOGE(TAG, "Scan start failed: %d", this->scan_start_failed_);
-    this->scan_start_failed_ = ESP_BT_STATUS_SUCCESS;
+void ESP32BLETracker::start_scan() {
+  if (xSemaphoreTake(this->scan_end_lock_, 0L)) {
+    this->start_scan_(true);
+  } else {
+    ESP_LOGW(TAG, "Scan requested when a scan is already in progress. Ignoring.");
   }
+}
+
+void ESP32BLETracker::stop_scan() {
+  ESP_LOGD(TAG, "Stopping scan.");
+  this->scan_continuous_ = false;
+  esp_ble_gap_stop_scanning();
+  this->cancel_timeout("scan");
 }
 
 bool ESP32BLETracker::ble_setup() {
@@ -99,13 +211,39 @@ bool ESP32BLETracker::ble_setup() {
     return false;
   }
 
-  esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
-
-  // Initialize the bluetooth controller with the default configuration
+#ifdef USE_ARDUINO
   if (!btStart()) {
     ESP_LOGE(TAG, "btStart failed: %d", esp_bt_controller_get_status());
     return false;
   }
+#else
+  if (esp_bt_controller_get_status() != ESP_BT_CONTROLLER_STATUS_ENABLED) {
+    // start bt controller
+    if (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_IDLE) {
+      esp_bt_controller_config_t cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+      err = esp_bt_controller_init(&cfg);
+      if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_bt_controller_init failed: %s", esp_err_to_name(err));
+        return false;
+      }
+      while (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_IDLE)
+        ;
+    }
+    if (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_INITED) {
+      err = esp_bt_controller_enable(ESP_BT_MODE_BLE);
+      if (err != ESP_OK) {
+        ESP_LOGE(TAG, "esp_bt_controller_enable failed: %s", esp_err_to_name(err));
+        return false;
+      }
+    }
+    if (esp_bt_controller_get_status() != ESP_BT_CONTROLLER_STATUS_ENABLED) {
+      ESP_LOGE(TAG, "esp bt controller enable failed");
+      return false;
+    }
+  }
+#endif
+
+  esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);
 
   err = esp_bluedroid_init();
   if (err != ESP_OK) {
@@ -120,6 +258,11 @@ bool ESP32BLETracker::ble_setup() {
   err = esp_ble_gap_register_callback(ESP32BLETracker::gap_event_handler);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "esp_ble_gap_register_callback failed: %d", err);
+    return false;
+  }
+  err = esp_ble_gattc_register_callback(ESP32BLETracker::gattc_event_handler);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "esp_ble_gattc_register_callback failed: %d", err);
     return false;
   }
 
@@ -139,9 +282,10 @@ bool ESP32BLETracker::ble_setup() {
   return true;
 }
 
-void ESP32BLETracker::start_scan(bool first) {
-  if (!xSemaphoreTake(this->scan_end_lock_, 0L)) {
-    ESP_LOGW(TAG, "Cannot start scan!");
+void ESP32BLETracker::start_scan_(bool first) {
+  // The lock must be held when calling this function.
+  if (xSemaphoreTake(this->scan_end_lock_, 0L)) {
+    ESP_LOGE(TAG, "start_scan called without holding scan_end_lock_");
     return;
   }
 
@@ -151,6 +295,7 @@ void ESP32BLETracker::start_scan(bool first) {
       listener->on_scan_end();
   }
   this->already_discovered_.clear();
+  this->scanner_idle_ = false;
   this->scan_params_.scan_type = this->scan_active_ ? BLE_SCAN_TYPE_ACTIVE : BLE_SCAN_TYPE_PASSIVE;
   this->scan_params_.own_addr_type = BLE_ADDR_TYPE_PUBLIC;
   this->scan_params_.scan_filter_policy = BLE_SCAN_FILTER_ALLOW_ALL;
@@ -166,31 +311,71 @@ void ESP32BLETracker::start_scan(bool first) {
   });
 }
 
+void ESP32BLETracker::end_of_scan_() {
+  // The lock must be held when calling this function.
+  if (xSemaphoreTake(this->scan_end_lock_, 0L)) {
+    ESP_LOGE(TAG, "end_of_scan_ called without holding the scan_end_lock_");
+    return;
+  }
+
+  ESP_LOGD(TAG, "End of scan.");
+  this->scanner_idle_ = true;
+  this->already_discovered_.clear();
+  xSemaphoreGive(this->scan_end_lock_);
+  this->cancel_timeout("scan");
+
+  for (auto *listener : this->listeners_)
+    listener->on_scan_end();
+}
+
+void ESP32BLETracker::register_client(ESPBTClient *client) {
+  client->app_id = ++this->app_id_;
+  this->clients_.push_back(client);
+}
+
 void ESP32BLETracker::gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
+  BLEEvent *gap_event = new BLEEvent(event, param);  // NOLINT(cppcoreguidelines-owning-memory)
+  global_esp32_ble_tracker->ble_events_.push(gap_event);
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+
+void ESP32BLETracker::real_gap_event_handler_(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
   switch (event) {
     case ESP_GAP_BLE_SCAN_RESULT_EVT:
-      global_esp32_ble_tracker->gap_scan_result(param->scan_rst);
+      this->gap_scan_result_(param->scan_rst);
       break;
     case ESP_GAP_BLE_SCAN_PARAM_SET_COMPLETE_EVT:
-      global_esp32_ble_tracker->gap_scan_set_param_complete(param->scan_param_cmpl);
+      this->gap_scan_set_param_complete_(param->scan_param_cmpl);
       break;
     case ESP_GAP_BLE_SCAN_START_COMPLETE_EVT:
-      global_esp32_ble_tracker->gap_scan_start_complete(param->scan_start_cmpl);
+      this->gap_scan_start_complete_(param->scan_start_cmpl);
+      break;
+    case ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT:
+      this->gap_scan_stop_complete_(param->scan_stop_cmpl);
       break;
     default:
       break;
   }
+  for (auto *client : this->clients_) {
+    client->gap_event_handler(event, param);
+  }
 }
 
-void ESP32BLETracker::gap_scan_set_param_complete(const esp_ble_gap_cb_param_t::ble_scan_param_cmpl_evt_param &param) {
+void ESP32BLETracker::gap_scan_set_param_complete_(const esp_ble_gap_cb_param_t::ble_scan_param_cmpl_evt_param &param) {
   this->scan_set_param_failed_ = param.status;
 }
 
-void ESP32BLETracker::gap_scan_start_complete(const esp_ble_gap_cb_param_t::ble_scan_start_cmpl_evt_param &param) {
+void ESP32BLETracker::gap_scan_start_complete_(const esp_ble_gap_cb_param_t::ble_scan_start_cmpl_evt_param &param) {
   this->scan_start_failed_ = param.status;
+  if (param.status != ESP_BT_STATUS_SUCCESS) {
+    xSemaphoreGive(this->scan_end_lock_);
+  }
 }
 
-void ESP32BLETracker::gap_scan_result(const esp_ble_gap_cb_param_t::ble_scan_result_evt_param &param) {
+void ESP32BLETracker::gap_scan_stop_complete_(const esp_ble_gap_cb_param_t::ble_scan_stop_cmpl_evt_param &param) {
+  xSemaphoreGive(this->scan_end_lock_);
+}
+
+void ESP32BLETracker::gap_scan_result_(const esp_ble_gap_cb_param_t::ble_scan_result_evt_param &param) {
   if (param.search_evt == ESP_GAP_SEARCH_INQ_RES_EVT) {
     if (xSemaphoreTake(this->scan_result_lock_, 0L)) {
       if (this->scan_result_index_ < 16) {
@@ -200,6 +385,19 @@ void ESP32BLETracker::gap_scan_result(const esp_ble_gap_cb_param_t::ble_scan_res
     }
   } else if (param.search_evt == ESP_GAP_SEARCH_INQ_CMPL_EVT) {
     xSemaphoreGive(this->scan_end_lock_);
+  }
+}
+
+void ESP32BLETracker::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
+                                          esp_ble_gattc_cb_param_t *param) {
+  BLEEvent *gattc_event = new BLEEvent(event, gattc_if, param);  // NOLINT(cppcoreguidelines-owning-memory)
+  global_esp32_ble_tracker->ble_events_.push(gattc_event);
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+
+void ESP32BLETracker::real_gattc_event_handler_(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if,
+                                                esp_ble_gattc_cb_param_t *param) {
+  for (auto *client : this->clients_) {
+    client->gattc_event_handler(event, gattc_if, param);
   }
 }
 
@@ -221,6 +419,75 @@ ESPBTUUID ESPBTUUID::from_raw(const uint8_t *data) {
   ret.uuid_.len = ESP_UUID_LEN_128;
   for (size_t i = 0; i < ESP_UUID_LEN_128; i++)
     ret.uuid_.uuid.uuid128[i] = data[i];
+  return ret;
+}
+ESPBTUUID ESPBTUUID::from_raw(const std::string &data) {
+  ESPBTUUID ret;
+  if (data.length() == 4) {
+    ret.uuid_.len = ESP_UUID_LEN_16;
+    ret.uuid_.uuid.uuid16 = 0;
+    for (int i = 0; i < data.length();) {
+      uint8_t msb = data.c_str()[i];
+      uint8_t lsb = data.c_str()[i + 1];
+
+      if (msb > '9')
+        msb -= 7;
+      if (lsb > '9')
+        lsb -= 7;
+      ret.uuid_.uuid.uuid16 += (((msb & 0x0F) << 4) | (lsb & 0x0F)) << (2 - i) * 4;
+      i += 2;
+    }
+  } else if (data.length() == 8) {
+    ret.uuid_.len = ESP_UUID_LEN_32;
+    ret.uuid_.uuid.uuid32 = 0;
+    for (int i = 0; i < data.length();) {
+      uint8_t msb = data.c_str()[i];
+      uint8_t lsb = data.c_str()[i + 1];
+
+      if (msb > '9')
+        msb -= 7;
+      if (lsb > '9')
+        lsb -= 7;
+      ret.uuid_.uuid.uuid32 += (((msb & 0x0F) << 4) | (lsb & 0x0F)) << (6 - i) * 4;
+      i += 2;
+    }
+  } else if (data.length() == 16) {  // how we can have 16 byte length string reprezenting 128 bit uuid??? needs to be
+                                     // investigated (lack of time)
+    ret.uuid_.len = ESP_UUID_LEN_128;
+    memcpy(ret.uuid_.uuid.uuid128, (uint8_t *) data.data(), 16);
+  } else if (data.length() == 36) {
+    // If the length of the string is 36 bytes then we will assume it is a long hex string in
+    // UUID format.
+    ret.uuid_.len = ESP_UUID_LEN_128;
+    int n = 0;
+    for (int i = 0; i < data.length();) {
+      if (data.c_str()[i] == '-')
+        i++;
+      uint8_t msb = data.c_str()[i];
+      uint8_t lsb = data.c_str()[i + 1];
+
+      if (msb > '9')
+        msb -= 7;
+      if (lsb > '9')
+        lsb -= 7;
+      ret.uuid_.uuid.uuid128[15 - n++] = ((msb & 0x0F) << 4) | (lsb & 0x0F);
+      i += 2;
+    }
+  } else {
+    ESP_LOGE(TAG, "ERROR: UUID value not 2, 4, 16 or 36 bytes - %s", data.c_str());
+  }
+  return ret;
+}
+ESPBTUUID ESPBTUUID::from_uuid(esp_bt_uuid_t uuid) {
+  ESPBTUUID ret;
+  ret.uuid_.len = uuid.len;
+  if (uuid.len == ESP_UUID_LEN_16) {
+    ret.uuid_.uuid.uuid16 = uuid.uuid.uuid16;
+  } else if (uuid.len == ESP_UUID_LEN_32) {
+    ret.uuid_.uuid.uuid32 = uuid.uuid.uuid32;
+  } else if (uuid.len == ESP_UUID_LEN_128) {
+    memcpy(ret.uuid_.uuid.uuid128, uuid.uuid.uuid128, ESP_UUID_LEN_128);
+  }
   return ret;
 }
 ESPBTUUID ESPBTUUID::as_128bit() const {
@@ -284,25 +551,41 @@ bool ESPBTUUID::operator==(const ESPBTUUID &uuid) const {
   }
   return false;
 }
-esp_bt_uuid_t ESPBTUUID::get_uuid() { return this->uuid_; }
-std::string ESPBTUUID::to_string() {
-  char sbuf[64];
+esp_bt_uuid_t ESPBTUUID::get_uuid() const { return this->uuid_; }
+std::string ESPBTUUID::to_string() const {
   switch (this->uuid_.len) {
     case ESP_UUID_LEN_16:
-      sprintf(sbuf, "%02X:%02X", this->uuid_.uuid.uuid16 >> 8, this->uuid_.uuid.uuid16 & 0xff);
-      break;
+      return str_snprintf("0x%02X%02X", 6, this->uuid_.uuid.uuid16 >> 8, this->uuid_.uuid.uuid16 & 0xff);
     case ESP_UUID_LEN_32:
-      sprintf(sbuf, "%02X:%02X:%02X:%02X", this->uuid_.uuid.uuid32 >> 24, (this->uuid_.uuid.uuid32 >> 16 & 0xff),
-              (this->uuid_.uuid.uuid32 >> 8 & 0xff), this->uuid_.uuid.uuid32 & 0xff);
-      break;
+      return str_snprintf("0x%02X%02X%02X%02X", 10, this->uuid_.uuid.uuid32 >> 24,
+                          (this->uuid_.uuid.uuid32 >> 16 & 0xff), (this->uuid_.uuid.uuid32 >> 8 & 0xff),
+                          this->uuid_.uuid.uuid32 & 0xff);
     default:
     case ESP_UUID_LEN_128:
-      for (uint8_t i = 0; i < 16; i++)
-        sprintf(sbuf + i * 3, "%02X:", this->uuid_.uuid.uuid128[i]);
-      sbuf[47] = '\0';
-      break;
+      std::string buf;
+      for (int8_t i = 15; i >= 0; i--) {
+        buf += str_snprintf("%02X", 2, this->uuid_.uuid.uuid128[i]);
+        if (i == 6 || i == 8 || i == 10 || i == 12)
+          buf += "-";
+      }
+      return buf;
   }
-  return sbuf;
+  return "";
+}
+
+uint64_t ESPBTUUID::get_128bit_high() const {
+  esp_bt_uuid_t uuid = this->as_128bit().get_uuid();
+  return ((uint64_t) uuid.uuid.uuid128[15] << 56) | ((uint64_t) uuid.uuid.uuid128[14] << 48) |
+         ((uint64_t) uuid.uuid.uuid128[13] << 40) | ((uint64_t) uuid.uuid.uuid128[12] << 32) |
+         ((uint64_t) uuid.uuid.uuid128[11] << 24) | ((uint64_t) uuid.uuid.uuid128[10] << 16) |
+         ((uint64_t) uuid.uuid.uuid128[9] << 8) | ((uint64_t) uuid.uuid.uuid128[8]);
+}
+uint64_t ESPBTUUID::get_128bit_low() const {
+  esp_bt_uuid_t uuid = this->as_128bit().get_uuid();
+  return ((uint64_t) uuid.uuid.uuid128[7] << 56) | ((uint64_t) uuid.uuid.uuid128[6] << 48) |
+         ((uint64_t) uuid.uuid.uuid128[5] << 40) | ((uint64_t) uuid.uuid.uuid128[4] << 32) |
+         ((uint64_t) uuid.uuid.uuid128[3] << 24) | ((uint64_t) uuid.uuid.uuid128[2] << 16) |
+         ((uint64_t) uuid.uuid.uuid128[1] << 8) | ((uint64_t) uuid.uuid.uuid128[0]);
 }
 
 ESPBLEiBeacon::ESPBLEiBeacon(const uint8_t *data) { memcpy(&this->beacon_data_, data, sizeof(beacon_data_)); }
@@ -316,6 +599,7 @@ optional<ESPBLEiBeacon> ESPBLEiBeacon::from_manufacturer_data(const ServiceData 
 }
 
 void ESPBTDevice::parse_scan_rst(const esp_ble_gap_cb_param_t::ble_scan_result_evt_param &param) {
+  this->scan_result_ = param;
   for (uint8_t i = 0; i < ESP_BD_ADDR_LEN; i++)
     this->address_[i] = param.bda[i];
   this->address_type_ = param.ble_addr_type;
@@ -357,15 +641,23 @@ void ESPBTDevice::parse_scan_rst(const esp_ble_gap_cb_param_t::ble_scan_result_e
     ESP_LOGVV(TAG, "  Service UUID: %s", uuid.to_string().c_str());
   }
   for (auto &data : this->manufacturer_datas_) {
-    ESP_LOGVV(TAG, "  Manufacturer data: %s", hexencode(data.data).c_str());
+    ESP_LOGVV(TAG, "  Manufacturer data: %s", format_hex_pretty(data.data).c_str());
+    if (this->get_ibeacon().has_value()) {
+      auto ibeacon = this->get_ibeacon().value();
+      ESP_LOGVV(TAG, "    iBeacon data:");
+      ESP_LOGVV(TAG, "      UUID: %s", ibeacon.get_uuid().to_string().c_str());
+      ESP_LOGVV(TAG, "      Major: %u", ibeacon.get_major());
+      ESP_LOGVV(TAG, "      Minor: %u", ibeacon.get_minor());
+      ESP_LOGVV(TAG, "      TXPower: %d", ibeacon.get_signal_power());
+    }
   }
   for (auto &data : this->service_datas_) {
     ESP_LOGVV(TAG, "  Service data:");
     ESP_LOGVV(TAG, "    UUID: %s", data.uuid.to_string().c_str());
-    ESP_LOGVV(TAG, "    Data: %s", hexencode(data.data).c_str());
+    ESP_LOGVV(TAG, "    Data: %s", format_hex_pretty(data.data).c_str());
   }
 
-  ESP_LOGVV(TAG, "Adv data: %s", hexencode(param.ble_adv, param.adv_data_len + param.scan_rsp_len).c_str());
+  ESP_LOGVV(TAG, "Adv data: %s", format_hex_pretty(param.ble_adv, param.adv_data_len + param.scan_rsp_len).c_str());
 #endif
 }
 void ESPBTDevice::parse_adv_(const esp_ble_gap_cb_param_t::ble_scan_result_evt_param &param) {
@@ -391,11 +683,17 @@ void ESPBTDevice::parse_adv_(const esp_ble_gap_cb_param_t::ble_scan_result_evt_p
     // (called CSS here)
 
     switch (record_type) {
+      case ESP_BLE_AD_TYPE_NAME_SHORT:
       case ESP_BLE_AD_TYPE_NAME_CMPL: {
         // CSS 1.2 LOCAL NAME
         // "The Local Name data type shall be the same as, or a shortened version of, the local name assigned to the
         // device." CSS 1: Optional in this context; shall not appear more than once in a block.
-        this->name_ = std::string(reinterpret_cast<const char *>(record), record_length);
+        // SHORTENED LOCAL NAME
+        // "The Shortened Local Name data type defines a shortened version of the Local Name data type. The Shortened
+        // Local Name data type shall not be used to advertise a name that is longer than the Local Name data type."
+        if (record_length > this->name_.length()) {
+          this->name_ = std::string(reinterpret_cast<const char *>(record), record_length);
+        }
         break;
       }
       case ESP_BLE_AD_TYPE_TX_PWR: {
@@ -511,6 +809,9 @@ void ESPBTDevice::parse_adv_(const esp_ble_gap_cb_param_t::ble_scan_result_evt_p
         this->service_datas_.push_back(data);
         break;
       }
+      case ESP_BLE_AD_TYPE_INT_RANGE:
+        // Avoid logging this as it's very verbose
+        break;
       default: {
         ESP_LOGV(TAG, "Unhandled type: advType: 0x%02x", record_type);
         break;
@@ -532,7 +833,9 @@ void ESP32BLETracker::dump_config() {
   ESP_LOGCONFIG(TAG, "  Scan Interval: %.1f ms", this->scan_interval_ * 0.625f);
   ESP_LOGCONFIG(TAG, "  Scan Window: %.1f ms", this->scan_window_ * 0.625f);
   ESP_LOGCONFIG(TAG, "  Scan Type: %s", this->scan_active_ ? "ACTIVE" : "PASSIVE");
+  ESP_LOGCONFIG(TAG, "  Continuous Scanning: %s", this->scan_continuous_ ? "True" : "False");
 }
+
 void ESP32BLETracker::print_bt_device_info(const ESPBTDevice &device) {
   const uint64_t address = device.address_uint64();
   for (auto &disc : this->already_discovered_) {
@@ -563,8 +866,9 @@ void ESP32BLETracker::print_bt_device_info(const ESPBTDevice &device) {
   }
 
   ESP_LOGD(TAG, "  Address Type: %s", address_type_s);
-  if (!device.get_name().empty())
+  if (!device.get_name().empty()) {
     ESP_LOGD(TAG, "  Name: '%s'", device.get_name().c_str());
+  }
   for (auto &tx_power : device.get_tx_powers()) {
     ESP_LOGD(TAG, "  TX Power: %d", tx_power);
   }

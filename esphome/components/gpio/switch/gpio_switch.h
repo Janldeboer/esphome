@@ -1,7 +1,10 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/core/hal.h"
 #include "esphome/components/switch/switch.h"
+
+#include <vector>
 
 namespace esphome {
 namespace gpio {
@@ -11,6 +14,8 @@ enum GPIOSwitchRestoreMode {
   GPIO_SWITCH_RESTORE_DEFAULT_ON,
   GPIO_SWITCH_ALWAYS_OFF,
   GPIO_SWITCH_ALWAYS_ON,
+  GPIO_SWITCH_RESTORE_INVERTED_DEFAULT_OFF,
+  GPIO_SWITCH_RESTORE_INVERTED_DEFAULT_ON,
 };
 
 class GPIOSwitch : public switch_::Switch, public Component {

@@ -56,12 +56,11 @@ class PIDClimate : public climate::Climate, public Component {
   bool supports_heat_() const { return this->heat_output_ != nullptr; }
 
   void write_output_(float value);
-  void handle_non_auto_mode_();
 
   /// The sensor used for getting the current temperature
   sensor::Sensor *sensor_;
-  output::FloatOutput *cool_output_ = nullptr;
-  output::FloatOutput *heat_output_ = nullptr;
+  output::FloatOutput *cool_output_{nullptr};
+  output::FloatOutput *heat_output_{nullptr};
   PIDController controller_;
   /// Output value as reported by the PID controller, for PIDClimateSensor
   float output_value_;

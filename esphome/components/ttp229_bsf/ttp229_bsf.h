@@ -1,7 +1,10 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/core/hal.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
+
+#include <vector>
 
 namespace esphome {
 namespace ttp229_bsf {

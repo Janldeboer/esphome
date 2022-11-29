@@ -5,8 +5,22 @@
 #include "api_pb2.h"
 #include "api_server.h"
 
+#include <vector>
+
 namespace esphome {
 namespace api {
+
+template<typename... X> class TemplatableStringValue : public TemplatableValue<std::string, X...> {
+ public:
+  TemplatableStringValue() : TemplatableValue<std::string, X...>() {}
+
+  template<typename F, enable_if_t<!is_invocable<F, X...>::value, int> = 0>
+  TemplatableStringValue(F value) : TemplatableValue<std::string, X...>(value) {}
+
+  template<typename F, enable_if_t<is_invocable<F, X...>::value, int> = 0>
+  TemplatableStringValue(F f)
+      : TemplatableValue<std::string, X...>([f](X... x) -> std::string { return to_string(f(x...)); }) {}
+};
 
 template<typename... Ts> class TemplatableKeyValuePair {
  public:
@@ -19,7 +33,8 @@ template<typename... Ts> class HomeAssistantServiceCallAction : public Action<Ts
  public:
   explicit HomeAssistantServiceCallAction(APIServer *parent, bool is_event) : parent_(parent), is_event_(is_event) {}
 
-  TEMPLATABLE_STRING_VALUE(service);
+  template<typename T> void set_service(T service) { this->service_ = service; }
+
   template<typename T> void add_data(std::string key, T value) {
     this->data_.push_back(TemplatableKeyValuePair<Ts...>(key, value));
   }
@@ -58,6 +73,7 @@ template<typename... Ts> class HomeAssistantServiceCallAction : public Action<Ts
  protected:
   APIServer *parent_;
   bool is_event_;
+  TemplatableStringValue<Ts...> service_{};
   std::vector<TemplatableKeyValuePair<Ts...>> data_;
   std::vector<TemplatableKeyValuePair<Ts...>> data_template_;
   std::vector<TemplatableKeyValuePair<Ts...>> variables_;

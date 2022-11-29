@@ -2,8 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import sensor
 from esphome.const import (
-    CONF_ID,
-    DEVICE_CLASS_EMPTY,
+    STATE_CLASS_MEASUREMENT,
     UNIT_PERCENT,
     ICON_GAUGE,
     CONF_TYPE,
@@ -28,10 +27,15 @@ PID_CLIMATE_SENSOR_TYPES = {
 
 CONF_CLIMATE_ID = "climate_id"
 CONFIG_SCHEMA = (
-    sensor.sensor_schema(UNIT_PERCENT, ICON_GAUGE, 1, DEVICE_CLASS_EMPTY)
+    sensor.sensor_schema(
+        PIDClimateSensor,
+        unit_of_measurement=UNIT_PERCENT,
+        icon=ICON_GAUGE,
+        accuracy_decimals=1,
+        state_class=STATE_CLASS_MEASUREMENT,
+    )
     .extend(
         {
-            cv.GenerateID(): cv.declare_id(PIDClimateSensor),
             cv.GenerateID(CONF_CLIMATE_ID): cv.use_id(PIDClimate),
             cv.Required(CONF_TYPE): cv.enum(PID_CLIMATE_SENSOR_TYPES, upper=True),
         }
@@ -40,11 +44,10 @@ CONFIG_SCHEMA = (
 )
 
 
-def to_code(config):
-    parent = yield cg.get_variable(config[CONF_CLIMATE_ID])
-    var = cg.new_Pvariable(config[CONF_ID])
-    yield sensor.register_sensor(var, config)
-    yield cg.register_component(var, config)
+async def to_code(config):
+    parent = await cg.get_variable(config[CONF_CLIMATE_ID])
+    var = await sensor.new_sensor(config)
+    await cg.register_component(var, config)
 
     cg.add(var.set_parent(parent))
     cg.add(var.set_type(config[CONF_TYPE]))

@@ -131,7 +131,8 @@ class LightColorValues {
 
   /// Convert these light color values to a brightness-only representation and write them to brightness.
   void as_brightness(float *brightness, float gamma = 0, float min = 0, float max = 1) const {
-    *brightness = gamma_correct(this->state_ * this->brightness_, gamma);
+    float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
+    *brightness = gamma_correct(corrected_brightness, gamma);
   }
 
   /// Convert these light color values to an RGB representation and write them to red, green, blue.
@@ -139,6 +140,7 @@ class LightColorValues {
               bool color_interlock = false) const {
     if (this->color_mode_ & ColorCapability::RGB) {
       float brightness = this->state_ * this->brightness_ * this->color_brightness_;
+      brightness = brightness_correct(this->state_ * this->brightness_, min, max);
       *red = gamma_correct(brightness * this->red_, gamma);
       *green = gamma_correct(brightness * this->green_, gamma);
       *blue = gamma_correct(brightness * this->blue_, gamma);
@@ -150,8 +152,9 @@ class LightColorValues {
   /// Convert these light color values to an RGBW representation and write them to red, green, blue, white.
   void as_rgbw(float *red, float *green, float *blue, float *white, float gamma = 0, float min = 0, 
                 float max = 1, bool color_interlock = false) const {
-    this->as_rgb(red, green, blue, gamma);
+    this->as_rgb(red, green, blue, gamma, min, max);
     if (this->color_mode_ & ColorCapability::WHITE) {
+      float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
       *white = gamma_correct(this->state_ * this->brightness_ * this->white_, gamma);
     } else {
       *white = 0;
@@ -162,16 +165,16 @@ class LightColorValues {
   void as_rgbww(float *red, float *green, float *blue, float *cold_white, float *warm_white, float gamma = 0, 
                 float min = 0, float max = 1,
                 bool constant_brightness = false) const {
-    this->as_rgb(red, green, blue, gamma);
-    this->as_cwww(cold_white, warm_white, gamma, constant_brightness);
+    this->as_rgb(red, green, blue, gamma, min, max);
+    this->as_cwww(cold_white, warm_white, gamma, min, max, constant_brightness);
   }
 
   /// Convert these light color values to an RGB+CT+BR representation with the given parameters.
   void as_rgbct(float color_temperature_cw, float color_temperature_ww, float *red, float *green, float *blue,
                 float *color_temperature, float *white_brightness, float gamma = 0, float min = 0, 
                 float max = 1) const {
-    this->as_rgb(red, green, blue, gamma);
-    this->as_ct(color_temperature_cw, color_temperature_ww, color_temperature, white_brightness, gamma);
+    this->as_rgb(red, green, blue, gamma, min, max);
+    this->as_ct(color_temperature_cw, color_temperature_ww, color_temperature, white_brightness, gamma, min, max);
   }
 
   /// Convert these light color values to an CWWW representation with the given parameters.
@@ -180,6 +183,7 @@ class LightColorValues {
     if (this->color_mode_ & ColorCapability::COLD_WARM_WHITE) {
       const float cw_level = gamma_correct(this->cold_white_, gamma);
       const float ww_level = gamma_correct(this->warm_white_, gamma);
+      float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
       const float white_level = gamma_correct(this->state_ * this->brightness_, gamma);
       if (!constant_brightness) {
         *cold_white = white_level * cw_level;
@@ -206,7 +210,8 @@ class LightColorValues {
     if (this->color_mode_ & ColorCapability::COLOR_TEMPERATURE) {
       *color_temperature =
           (this->color_temperature_ - color_temperature_cw) / (color_temperature_ww - color_temperature_cw);
-      *white_brightness = gamma_correct(this->state_ * this->brightness_ * white_level, gamma);
+      float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
+      *white_brightness = gamma_correct(corrected_brightness * white_level, gamma);
     } else {  // Probably won't get here but put this here anyway.
       *white_brightness = 0;
     }

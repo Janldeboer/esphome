@@ -130,12 +130,13 @@ class LightColorValues {
   void as_binary(bool *binary) const { *binary = this->state_ == 1.0f; }
 
   /// Convert these light color values to a brightness-only representation and write them to brightness.
-  void as_brightness(float *brightness, float gamma = 0) const {
+  void as_brightness(float *brightness, float gamma = 0, float min = 0, float max = 1) const {
     *brightness = gamma_correct(this->state_ * this->brightness_, gamma);
   }
 
   /// Convert these light color values to an RGB representation and write them to red, green, blue.
-  void as_rgb(float *red, float *green, float *blue, float gamma = 0, bool color_interlock = false) const {
+  void as_rgb(float *red, float *green, float *blue, float gamma = 0, float min = 0, float max = 1, 
+              bool color_interlock = false) const {
     if (this->color_mode_ & ColorCapability::RGB) {
       float brightness = this->state_ * this->brightness_ * this->color_brightness_;
       *red = gamma_correct(brightness * this->red_, gamma);
@@ -147,8 +148,8 @@ class LightColorValues {
   }
 
   /// Convert these light color values to an RGBW representation and write them to red, green, blue, white.
-  void as_rgbw(float *red, float *green, float *blue, float *white, float gamma = 0,
-               bool color_interlock = false) const {
+  void as_rgbw(float *red, float *green, float *blue, float *white, float gamma = 0, float min = 0, 
+                float max = 1, bool color_interlock = false) const {
     this->as_rgb(red, green, blue, gamma);
     if (this->color_mode_ & ColorCapability::WHITE) {
       *white = gamma_correct(this->state_ * this->brightness_ * this->white_, gamma);
@@ -158,7 +159,8 @@ class LightColorValues {
   }
 
   /// Convert these light color values to an RGBWW representation with the given parameters.
-  void as_rgbww(float *red, float *green, float *blue, float *cold_white, float *warm_white, float gamma = 0,
+  void as_rgbww(float *red, float *green, float *blue, float *cold_white, float *warm_white, float gamma = 0, 
+                float min = 0, float max = 1,
                 bool constant_brightness = false) const {
     this->as_rgb(red, green, blue, gamma);
     this->as_cwww(cold_white, warm_white, gamma, constant_brightness);
@@ -166,13 +168,15 @@ class LightColorValues {
 
   /// Convert these light color values to an RGB+CT+BR representation with the given parameters.
   void as_rgbct(float color_temperature_cw, float color_temperature_ww, float *red, float *green, float *blue,
-                float *color_temperature, float *white_brightness, float gamma = 0) const {
+                float *color_temperature, float *white_brightness, float gamma = 0, float min = 0, 
+                float max = 1) const {
     this->as_rgb(red, green, blue, gamma);
     this->as_ct(color_temperature_cw, color_temperature_ww, color_temperature, white_brightness, gamma);
   }
 
   /// Convert these light color values to an CWWW representation with the given parameters.
-  void as_cwww(float *cold_white, float *warm_white, float gamma = 0, bool constant_brightness = false) const {
+  void as_cwww(float *cold_white, float *warm_white, float gamma = 0, float min = 0, float max = 1,
+               bool constant_brightness = false) const {
     if (this->color_mode_ & ColorCapability::COLD_WARM_WHITE) {
       const float cw_level = gamma_correct(this->cold_white_, gamma);
       const float ww_level = gamma_correct(this->warm_white_, gamma);
@@ -197,7 +201,7 @@ class LightColorValues {
 
   /// Convert these light color values to a CT+BR representation with the given parameters.
   void as_ct(float color_temperature_cw, float color_temperature_ww, float *color_temperature, float *white_brightness,
-             float gamma = 0) const {
+             float gamma = 0, float min = 0, float max = 1) const {
     const float white_level = this->color_mode_ & ColorCapability::RGB ? this->white_ : 1;
     if (this->color_mode_ & ColorCapability::COLOR_TEMPERATURE) {
       *color_temperature =

@@ -328,6 +328,24 @@ float gamma_uncorrect(float value, float gamma) {
   return powf(value, 1 / gamma);
 }
 
+float brightness_correct(float brightness, float min, float max) {
+  if (brightness <= 0.0f)
+    return 0.0f;
+  if (brightness >= 1.0f)
+    return 1.0f;
+
+  return min + (max - min) * brightness;
+}
+
+float brightness_uncorrect(float brightness, float min, float max) {
+  if (brightness <= 0.0f)
+    return 0.0f;
+  if (brightness >= 1.0f)
+    return 1.0f;
+
+  return (brightness - min) / (max - min);
+}
+
 void rgb_to_hsv(float red, float green, float blue, int &hue, float &saturation, float &value) {
   float max_color_value = std::max(std::max(red, green), blue);
   float min_color_value = std::min(std::min(red, green), blue);

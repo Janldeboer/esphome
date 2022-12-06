@@ -431,6 +431,12 @@ float gamma_correct(float value, float gamma);
 /// Reverts gamma correction of \p gamma to \p value.
 float gamma_uncorrect(float value, float gamma);
 
+/// Applies brightness correction of \p brightness to be between \p min and \p max unless \p brightness is 0.
+float brightness_correct(float brightness, float min, float max);
+/// Reverts brightness correction of \p brightness to be between \p min and \p max unless \p brightness is 0.
+float brightness_uncorrect(float brightness, float min, float max);
+
+
 /// Convert \p red, \p green and \p blue (all 0-1) values to \p hue (0-360), \p saturation (0-1) and \p value (0-1).
 void rgb_to_hsv(float red, float green, float blue, int &hue, float &saturation, float &value);
 /// Convert \p hue (0-360), \p saturation (0-1) and \p value (0-1) to \p red, \p green and \p blue (all 0-1).

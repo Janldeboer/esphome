@@ -116,6 +116,12 @@ class LightState : public EntityBase, public Component {
   void set_gamma_correct(float gamma_correct);
   float get_gamma_correct() const { return this->gamma_correct_; }
 
+  /// Set min and max brightness
+  void set_min_brightness(float min_brightness);
+  void set_max_brightness(float max_brightness);
+  float get_min_brightness() const { return this->min_brightness_; }
+  float get_max_brightness() const { return this->max_brightness_; }
+
   /// Set the restore mode of this light
   void set_restore_mode(LightRestoreMode restore_mode);
 
@@ -202,6 +208,10 @@ class LightState : public EntityBase, public Component {
   uint32_t flash_transition_length_{};
   /// Gamma correction factor for the light.
   float gamma_correct_{};
+  /// Minimum brightness for the light.
+  float min_brightness_{};
+  /// Maximum brightness for the light.
+  float max_brightness_{};
   /// Restore mode of the light.
   LightRestoreMode restore_mode_;
   /// List of effects for this light.

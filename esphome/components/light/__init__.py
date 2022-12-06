@@ -9,6 +9,8 @@ from esphome.const import (
     CONF_FLASH_TRANSITION_LENGTH,
     CONF_GAMMA_CORRECT,
     CONF_ID,
+    CONF_MAX_BRIGHTNESS,
+    CONF_MIN_BRIGHTNESS,
     CONF_MQTT_ID,
     CONF_POWER_SUPPLY,
     CONF_RESTORE_MODE,
@@ -90,6 +92,8 @@ BINARY_LIGHT_SCHEMA = LIGHT_SCHEMA.extend(
 BRIGHTNESS_ONLY_LIGHT_SCHEMA = LIGHT_SCHEMA.extend(
     {
         cv.Optional(CONF_GAMMA_CORRECT, default=2.8): cv.positive_float,
+        cv.Optional(CONF_MIN_BRIGHTNESS, default="1%"): cv.percentage,
+        cv.Optional(CONF_MAX_BRIGHTNESS, default="100%"): cv.percentage,
         cv.Optional(
             CONF_DEFAULT_TRANSITION_LENGTH, default="1s"
         ): cv.positive_time_period_milliseconds,

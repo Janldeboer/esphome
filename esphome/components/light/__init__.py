@@ -153,6 +153,10 @@ async def setup_light_core_(light_var, output_var, config):
         )
     if CONF_GAMMA_CORRECT in config:
         cg.add(light_var.set_gamma_correct(config[CONF_GAMMA_CORRECT]))
+    if CONF_MAX_BRIGHTNESS in config:
+        cg.add(light_var.set_max_brightness(config[CONF_MAX_BRIGHTNESS]))
+    if CONF_MIN_BRIGHTNESS in config:
+        cg.add(light_var.set_min_brightness(config[CONF_MIN_BRIGHTNESS]))
     effects = await cg.build_registry_list(
         EFFECTS_REGISTRY, config.get(CONF_EFFECTS, [])
     )

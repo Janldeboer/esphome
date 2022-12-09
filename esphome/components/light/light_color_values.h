@@ -131,7 +131,7 @@ class LightColorValues {
 
   /// Convert these light color values to a brightness-only representation and write them to brightness.
   void as_brightness(float *brightness, float gamma = 0, float min = 0, float max = 1) const {
-    float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
+    float corrected_brightness = this->state_ * brightness_correct(this->brightness_, min, max);
     *brightness = gamma_correct(corrected_brightness, gamma);
   }
 
@@ -140,7 +140,7 @@ class LightColorValues {
               bool color_interlock = false) const {
     if (this->color_mode_ & ColorCapability::RGB) {
       float brightness = this->state_ * this->brightness_ * this->color_brightness_;
-      brightness = brightness_correct(this->state_ * this->brightness_, min, max);
+      brightness = this->state_ * brightness_correct(this->brightness_, min, max);
       *red = gamma_correct(brightness * this->red_, gamma);
       *green = gamma_correct(brightness * this->green_, gamma);
       *blue = gamma_correct(brightness * this->blue_, gamma);
@@ -154,7 +154,7 @@ class LightColorValues {
                 float max = 1, bool color_interlock = false) const {
     this->as_rgb(red, green, blue, gamma, min, max);
     if (this->color_mode_ & ColorCapability::WHITE) {
-      float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
+      float corrected_brightness = this->state_ * brightness_correct(this->brightness_, min, max);
       *white = gamma_correct(this->state_ * this->brightness_ * this->white_, gamma);
     } else {
       *white = 0;
@@ -183,7 +183,7 @@ class LightColorValues {
     if (this->color_mode_ & ColorCapability::COLD_WARM_WHITE) {
       const float cw_level = gamma_correct(this->cold_white_, gamma);
       const float ww_level = gamma_correct(this->warm_white_, gamma);
-      float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
+      float corrected_brightness = this->state_ * brightness_correct(this->brightness_, min, max);
       const float white_level = gamma_correct(this->state_ * this->brightness_, gamma);
       if (!constant_brightness) {
         *cold_white = white_level * cw_level;
@@ -210,7 +210,7 @@ class LightColorValues {
     if (this->color_mode_ & ColorCapability::COLOR_TEMPERATURE) {
       *color_temperature =
           (this->color_temperature_ - color_temperature_cw) / (color_temperature_ww - color_temperature_cw);
-      float corrected_brightness = brightness_correct(this->state_ * this->brightness_, min, max);
+      float corrected_brightness = this->state_ * brightness_correct(this->brightness_, min, max);
       *white_brightness = gamma_correct(corrected_brightness * white_level, gamma);
     } else {  // Probably won't get here but put this here anyway.
       *white_brightness = 0;
